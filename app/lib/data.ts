@@ -23,6 +23,7 @@ export interface Avatar {
 }
 
 export interface Garage {
+  id?: string // DB uuid when sourced from Supabase; undefined for static demo data
   name: string
   area: string
   dist: string

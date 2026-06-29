@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { createBookingAction } from '@/lib/actions/booking'
 import {
   BOOKINGS,
   DUR_PRESETS,
@@ -45,6 +47,10 @@ interface State {
   blocked: Record<number, boolean>
   copied: boolean
   fulfil: 'wait' | 'drop' | null
+  submitting: boolean
+  bookingRef: string | null
+  needSignIn: boolean
+  bookingError: string | null
   durations: Record<string, number>
   waStep: number
   waSymptom: string
@@ -82,6 +88,10 @@ const INITIAL: State = {
   blocked: {},
   copied: false,
   fulfil: null,
+  submitting: false,
+  bookingRef: null,
+  needSignIn: false,
+  bookingError: null,
   durations: {},
   waStep: 0,
   waSymptom: '',
@@ -263,6 +273,33 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     }
     patch({ copied: true })
     setTimeout(() => patch({ copied: false }), 1500)
+  }
+
+  // Persist the booking. With Supabase configured and a real garage selected,
+  // this writes a row the garage owner sees on their dashboard (RLS requires the
+  // driver to be signed in). Without a backend it falls back to the in-memory
+  // demo confirmation so the flow still completes.
+  const submitBooking = async () => {
+    if (st.slot == null || st.submitting) return
+    const garage = st.away || GARAGES[st.g]
+    const garageId = garage?.id
+    if (!isSupabaseConfigured || !garageId) {
+      patch({ s: 4 })
+      return
+    }
+    patch({ submitting: true, bookingError: null, needSignIn: false })
+    const slotLabel = SLOTS[st.slot] ? SLOTS[st.slot].day + ' · ' + SLOTS[st.slot].time : undefined
+    const res = await createBookingAction({
+      garageId,
+      issues: st.issues,
+      note: st.note,
+      slotLabel,
+      fulfilment: st.fulfil,
+      hasPhoto: st.photos.length > 0,
+    })
+    if (res.ok) patch({ submitting: false, bookingRef: res.ref, s: 4 })
+    else if (res.needAuth) patch({ submitting: false, needSignIn: true })
+    else patch({ submitting: false, bookingError: res.error })
   }
 
   // --- builders ----------------------------------------------------------
@@ -762,9 +799,18 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     dropPillBg: dropSel ? T.accent : '#fff',
     dropPillFg: dropSel ? '#fff' : '#33403A',
     dropPillBd: dropSel ? T.accent : '#E2E8E5',
-    cta1: canConfirm ? 'Hold my bay · pay deposit' : 'Pick a slot to continue',
+    cta1: st.submitting
+      ? 'Holding your bay…'
+      : canConfirm
+        ? 'Hold my bay · pay deposit'
+        : 'Pick a slot to continue',
     cta1bg: canConfirm ? T.accent : '#D8DEDB',
     cta1fg: canConfirm ? '#fff' : '#9AA6A0',
+    submitBooking: () => submitBooking(),
+    submitting: st.submitting,
+    bookingRef: st.bookingRef,
+    needSignIn: st.needSignIn,
+    bookingError: st.bookingError,
     track: trackRows(T.accent),
     doneBack: wl ? 'Done' : 'Back to your garages',
 
@@ -832,6 +878,9 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         aiText: '',
         photos: [],
         voice: null,
+        bookingRef: null,
+        needSignIn: false,
+        bookingError: null,
       }),
   }
 }
