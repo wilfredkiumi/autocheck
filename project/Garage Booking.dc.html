@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:#E9EDEB;}
+  @keyframes scrIn{from{transform:translateY(8px);}to{transform:translateY(0);}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+  @keyframes recpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes ping{0%{transform:scale(1);opacity:.6;}100%{transform:scale(2.6);opacity:0;}}
+  @keyframes wave{0%,100%{height:6px;}50%{height:18px;}}
+  .scr{animation:scrIn .32s cubic-bezier(.22,.8,.3,1);}
+  .pdot{animation:pulse 1.7s ease-in-out infinite;}
+  .phscroll::-webkit-scrollbar{display:none;}
+  .spin{animation:spin .8s linear infinite;}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:28px 24px 48px;font-family:'Manrope',sans-serif;gap:22px;">
+
+  <!-- DEMO SWITCHER -->
+  <div style="width:520px;max-width:100%;background:#fff;border:1px solid #DCE2DF;border-radius:18px;padding:16px 18px;box-shadow:0 6px 24px rgba(15,40,30,.06);">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:3px;">
+      <span style="font:700 11px 'Space Mono';color:#0E7C50;letter-spacing:.08em;">MULTI-TENANT DEMO</span>
+      <span style="height:1px;flex:1;background:#EAEFEC;"></span>
+    </div>
+    <div style="font:700 16px 'Archivo';color:#0F1A14;letter-spacing:-.01em;">One platform. Two sides, three brands.</div>
+    <div style="display:flex;gap:6px;margin-top:12px;background:#F2F5F3;border-radius:11px;padding:4px;">
+      <div onClick="{{ setDriver }}" style="flex:1;text-align:center;cursor:pointer;border-radius:8px;padding:9px;font:700 12px 'Manrope';background:{{ driverTabBg }};color:{{ driverTabFg }};box-shadow:{{ driverTabSh }};">Driver app</div>
+      <div onClick="{{ setWhatsApp }}" style="flex:1;text-align:center;cursor:pointer;border-radius:8px;padding:9px;font:700 12px 'Manrope';background:{{ whatsappTabBg }};color:{{ whatsappTabFg }};box-shadow:{{ whatsappTabSh }};">WhatsApp</div>
+      <div onClick="{{ setOwner }}" style="flex:1;text-align:center;cursor:pointer;border-radius:8px;padding:9px;font:700 12px 'Manrope';background:{{ ownerTabBg }};color:{{ ownerTabFg }};box-shadow:{{ ownerTabSh }};">Dashboard</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <sc-for list="{{ tenants }}" as="t" hint-placeholder-count="3">
+        <div onClick="{{ t.onClick }}" style="flex:1;min-width:148px;cursor:pointer;border-radius:12px;padding:10px 12px;border:1.5px solid {{ t.bd }};background:{{ t.bg }};">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:23px;height:23px;border-radius:7px;background:{{ t.accent }};color:#fff;font:800 11px 'Archivo';display:flex;align-items:center;justify-content:center;">{{ t.mark }}</span>
+            <span style="font:700 13px 'Manrope';color:{{ t.fg }};">{{ t.label }}</span>
+          </div>
+          <div style="font:500 11px 'Manrope';color:{{ t.subfg }};margin-top:4px;">{{ t.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- PHONE -->
+  <div data-screen-label="App" style="width:390px;height:844px;border-radius:46px;background:#F6F8F7;overflow:hidden;position:relative;box-shadow:0 40px 90px -25px rgba(15,40,30,.35),0 0 0 1px rgba(0,0,0,.06);border:8px solid #E4E9E6;">
+    <div style="position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 32px 9px;z-index:30;color:{{ statusColor }};font:600 14px 'Manrope';">
+      <span>9:41</span><span style="display:flex;gap:6px;align-items:center;font-size:12px;">●●● ▮▮ <span style="font-size:11px;">100%</span></span>
+    </div>
+
+    <div style="position:absolute;inset:0;--ac: {{ accent }};--acd: {{ accentDark }};--acs: {{ accentSoft }};">
+
+    <!-- CONSUMER HOME -->
+    <sc-if value="{{ isConsumerHome }}" hint-placeholder-val="{{ true }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 0 18px;overflow-y:auto;color:#0F1A14;">
+      <div style="padding:6px 20px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div style="width:32px;height:32px;border-radius:9px;background:var(--ac);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" fill="#fff"/></svg></div>
+          <span style="font:800 19px 'Archivo';letter-spacing:-.02em;">AutoCheck</span>
+        </div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#DCE5E0;display:flex;align-items:center;justify-content:center;font:700 14px 'Manrope';color:var(--ac);">D</div>
+      </div>
+      <div style="padding:0 20px;margin-bottom:18px;">
+        <div style="font:800 27px 'Archivo';letter-spacing:-.02em;line-height:1.1;">Book your car in.</div>
+        <div style="font:400 14px 'Manrope';color:#5A645E;margin-top:6px;line-height:1.45;">Reserve your spot with a garage you — or someone you trust — already know.</div>
+      </div>
+      <div style="padding:0 20px 16px;">
+        <div onClick="{{ toLocation }}" style="display:flex;align-items:center;gap:12px;background:#161B18;border-radius:16px;padding:14px 15px;cursor:pointer;">
+          <div style="width:38px;height:38px;border-radius:11px;background:#2A2E2B;display:flex;align-items:center;justify-content:center;flex:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="10" r="2.3" stroke="#fff" stroke-width="1.8"/></svg></div>
+          <div style="flex:1;"><div style="font:700 14px 'Manrope';color:#fff;">Away from home or broken down?</div><div style="font:400 12px 'Manrope';color:#9AA6A0;margin-top:1px;">Find a verified garage near you</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#6B756F" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div style="padding:0 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;">
+        <span style="font:700 13px 'Archivo';color:#0F1A14;">Your garages</span>
+        <span style="font:600 12px 'Manrope';color:var(--ac);">Manage</span>
+      </div>
+      <div style="padding:0 20px;">
+      <sc-for list="{{ garages }}" as="g" hint-placeholder-count="3">
+        <div onClick="{{ g.onClick }}" style="background:#fff;border:1px solid #E2E8E5;border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;box-shadow:0 2px 10px rgba(15,40,30,.03);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;"><span style="font:700 16px 'Archivo';">{{ g.name }}</span><svg width="15" height="15" viewBox="0 0 24 24" fill="var(--ac)"><path d="M12 2l2.2 1.6 2.7-.2 1 2.5 2.3 1.4-.7 2.6.7 2.6-2.3 1.4-1 2.5-2.7-.2L12 22l-2.2-1.6-2.7.2-1-2.5L3.8 16.3l.7-2.6-.7-2.6 2.3-1.4 1-2.5 2.7.2z"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div style="font:400 12px 'Manrope';color:#7B857F;margin-top:2px;">{{ g.area }} · {{ g.dist }}</div>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:2px;"><path d="M9 6l6 6-6 6" stroke="#C2CBC6" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:12px;background:#F4F7F5;border-radius:11px;padding:9px 11px;">
+            <sc-if value="{{ g.hasAvatars }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex:none;">
+                <sc-for list="{{ g.avatars }}" as="av" hint-placeholder-count="2">
+                  <span style="width:22px;height:22px;border-radius:50%;background:{{ av.c }};color:#fff;font:700 10px 'Manrope';display:flex;align-items:center;justify-content:center;border:2px solid #F4F7F5;margin-left:-6px;">{{ av.i }}</span>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ g.isVisits }}" hint-placeholder-val="{{ false }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex:none;"><path d="M3 12a9 9 0 109-9" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/><path d="M3 4v4h4" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4l3 2" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </sc-if>
+            <span style="font:600 12px 'Manrope';color:#33403A;">{{ g.trust }}</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:11px;border-top:1px solid #EDF1EF;">
+            <span style="display:flex;align-items:center;gap:7px;"><span class="pdot" style="width:8px;height:8px;border-radius:50%;background:var(--ac);display:inline-block;"></span><span style="font:400 12px 'Manrope';color:#7B857F;">Next opening</span></span>
+            <span style="font:700 13px 'Manrope';color:#0F1A14;">{{ g.next }}</span>
+          </div>
+        </div>
+      </sc-for>
+      </div>
+      <div style="padding:2px 20px 0;">
+        <div style="border:1.5px dashed #CBD5CF;border-radius:16px;padding:15px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <div style="width:38px;height:38px;border-radius:11px;background:var(--acs);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="var(--ac)" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+          <div><div style="font:700 14px 'Manrope';color:#0F1A14;">Add a garage</div><div style="font:400 12px 'Manrope';color:#7B857F;margin-top:1px;">From a friend's referral link or phone number</div></div>
+        </div>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- BRAND HOME (white-label) -->
+    <sc-if value="{{ isBrandHome }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:0 0 18px;overflow-y:auto;color:#0F1A14;">
+      <div style="background:linear-gradient(150deg,var(--ac),var(--acd));padding:64px 22px 24px;color:#fff;position:relative;overflow:hidden;">
+        <svg style="position:absolute;right:-30px;top:-20px;opacity:.12;" width="190" height="190" viewBox="0 0 24 24" fill="#fff"><path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11m-14 0h14m-14 0a2 2 0 00-2 2v3h2m14-5a2 2 0 012 2v3h-2M7 16h10M6 16v2m12-2v2"/></svg>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font:800 17px 'Archivo';">{{ brandMark }}</div>
+          <div><div style="font:800 19px 'Archivo';letter-spacing:-.01em;">{{ brandName }}</div><div style="font:500 11px 'Manrope';opacity:.85;">{{ g.area }}</div></div>
+        </div>
+        <div style="font:800 25px 'Archivo';line-height:1.12;margin-top:22px;letter-spacing:-.01em;">Book your car in<br>at {{ brandShort }}.</div>
+        <div style="font:400 13px 'Manrope';opacity:.9;margin-top:7px;">Your slot, reserved. Drive straight in — no queue, no calling ahead.</div>
+      </div>
+      <div style="padding:18px 20px 0;">
+        <div style="background:#fff;border:1px solid #E2E8E5;border-radius:16px;padding:16px;">
+          <div style="font:700 11px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin-bottom:11px;">TRUSTED HERE</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;">
+            <div style="display:flex;flex:none;">
+              <sc-for list="{{ g.circleAvatars }}" as="av" hint-placeholder-count="3">
+                <span style="width:30px;height:30px;border-radius:50%;background:{{ av.c }};color:#fff;font:700 12px 'Manrope';display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;margin-left:-8px;">{{ av.i }}</span>
+              </sc-for>
+            </div>
+            <div style="font:500 13px 'Manrope';color:#33403A;line-height:1.4;">{{ g.circleText }}</div>
+          </div>
+          <div style="background:#F4F7F5;border-radius:12px;padding:13px;">
+            <div style="color:#E8A33A;font-size:13px;margin-bottom:6px;">★★★★★</div>
+            <div style="font:400 13px 'Manrope';color:#33403A;line-height:1.55;">"{{ g.quote }}"</div>
+            <div style="font:600 11px 'Manrope';color:#7B857F;margin-top:8px;">— {{ g.quoteBy }}</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:13px 20px 0;">
+        <div style="display:flex;gap:9px;">
+          <div style="flex:1;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:13px;text-align:center;"><div style="font:800 17px 'Archivo';color:var(--ac);">{{ g.next }}</div><div style="font:400 10px 'Manrope';color:#7B857F;margin-top:3px;">next opening</div></div>
+          <div style="flex:1;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:13px;text-align:center;"><div style="font:800 17px 'Archivo';">{{ g.bays }} bays</div><div style="font:400 10px 'Manrope';color:#7B857F;margin-top:3px;">open till 6 PM</div></div>
+        </div>
+      </div>
+      <div style="padding:16px 20px 0;">
+        <div onClick="{{ toIssue }}" style="background:var(--ac);color:#fff;border-radius:14px;padding:16px;text-align:center;font:700 15px 'Manrope';cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.14);">Book your car in →</div>
+      </div>
+      <div style="padding:18px 20px 0;display:flex;align-items:center;justify-content:center;gap:7px;opacity:.6;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke="#6B756F" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span style="font:500 11px 'Space Mono';color:#6B756F;">Powered by AutoCheck · {{ brandDomain }}</span>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- LOCATION (drop a pin) -->
+    <sc-if value="{{ isLocation }}" hint-placeholder-val="{{ false }}">
+    <div class="scr" style="position:absolute;inset:0;padding:58px 0 0;overflow:hidden;color:#0F1A14;display:flex;flex-direction:column;">
+      <div style="padding:0 20px;display:flex;align-items:center;gap:12px;margin-bottom:14px;"><div onClick="{{ toHome }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E2E8E5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#0F1A14" stroke-width="2.2" stroke-linecap="round"/></svg></div><span style="font:800 17px 'Archivo';">Where are you?</span></div>
+      <div style="padding:0 20px 12px;"><div style="font:400 13px 'Manrope';color:#5A645E;line-height:1.45;">Tap the map to drop a pin, or use your location. We'll find verified garages nearest to you.</div></div>
+
+      <sc-if value="{{ locPerm }}" hint-placeholder-val="{{ true }}">
+        <div style="margin:0 20px 12px;background:var(--acs);border:1px solid var(--ac);border-radius:13px;padding:12px 13px;display:flex;align-items:center;gap:11px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke="var(--acd)" stroke-width="1.8"/><circle cx="12" cy="10" r="2.3" stroke="var(--acd)" stroke-width="1.8"/></svg>
+          <div style="flex:1;font:600 12px 'Manrope';color:var(--acd);">Allow precise location for the nearest help</div>
+          <div onClick="{{ allowLoc }}" style="font:700 12px 'Manrope';color:#fff;background:var(--ac);padding:7px 12px;border-radius:9px;cursor:pointer;">Allow</div>
+        </div>
+      </sc-if>
+
+      <div onClick="{{ onMapTap }}" style="position:relative;margin:0 20px;flex:1;min-height:0;border-radius:18px;overflow:hidden;cursor:crosshair;background:#DDE6DE;border:1px solid #CBD5CF;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 38px,rgba(255,255,255,.5) 38px 41px),repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.5) 46px 49px);"></div>
+        <div style="position:absolute;left:0;right:0;top:33%;height:13px;background:#EDEFEA;transform:rotate(-4deg);"></div>
+        <div style="position:absolute;top:0;bottom:0;left:58%;width:15px;background:#EDEFEA;"></div>
+        <div style="position:absolute;left:12%;top:18%;width:60px;height:42px;background:#C9D6CC;border-radius:3px;"></div>
+        <div style="position:absolute;left:66%;top:54%;width:74px;height:50px;background:#C9D6CC;border-radius:3px;"></div>
+        <div style="position:absolute;left:24%;top:62%;width:48px;height:40px;background:#C9D6CC;border-radius:3px;"></div>
+        <!-- pin -->
+        <div style="position:absolute;left:{{ pinX }};top:{{ pinY }};transform:translate(-50%,-100%);pointer-events:none;">
+          <div style="position:absolute;left:50%;top:100%;transform:translate(-50%,-6px);width:26px;height:26px;border-radius:50%;background:var(--ac);opacity:.25;animation:ping 1.8s ease-out infinite;"></div>
+          <svg width="40" height="48" viewBox="0 0 24 28" fill="none"><path d="M12 27c0 0 9-8.5 9-16A9 9 0 103 11c0 7.5 9 16 9 16z" fill="var(--ac)" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="11" r="3.4" fill="#fff"/></svg>
+        </div>
+        <div style="position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.92);border-radius:9px;padding:7px 10px;font:600 11px 'Manrope';color:#33403A;display:flex;align-items:center;gap:6px;"><span class="pdot" style="width:7px;height:7px;border-radius:50%;background:var(--ac);"></span>{{ pinArea }}</div>
+      </div>
+
+      <div style="padding:14px 20px 0;">
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:11px 13px;margin-bottom:10px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#9AA6A0" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="#9AA6A0" stroke-width="2" stroke-linecap="round"/></svg>
+          <input value="{{ town }}" onChange="{{ onTown }}" placeholder="Or type a town / estate…" style="border:none;outline:none;flex:1;font:500 13px 'Manrope';color:#0F1A14;background:transparent;">
+        </div>
+        <div style="display:flex;gap:9px;padding-bottom:16px;">
+          <div onClick="{{ allowLoc }}" style="flex:none;display:flex;align-items:center;justify-content:center;gap:7px;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:14px 15px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v8M8 12h8" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="var(--ac)" stroke-width="2"/></svg><span style="font:700 13px 'Manrope';color:var(--ac);">Use my location</span></div>
+          <div onClick="{{ confirmLocation }}" style="flex:1;background:var(--ac);color:#fff;border-radius:13px;padding:14px;text-align:center;font:700 14px 'Manrope';cursor:pointer;">Find garages here →</div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- DISCOVERY (verified list) -->
+    <sc-if value="{{ isDiscovery }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 0 18px;overflow-y:auto;color:#0F1A14;">
+      <div style="padding:0 20px;display:flex;align-items:center;gap:12px;margin-bottom:14px;"><div onClick="{{ toLocation }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E2E8E5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#0F1A14" stroke-width="2.2" stroke-linecap="round"/></svg></div><span style="font:600 13px 'Manrope';color:#7B857F;">Verified garages</span></div>
+      <div style="padding:0 20px;margin-bottom:14px;">
+        <div style="font:400 12px 'Manrope';color:#7B857F;display:flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke="#7B857F" stroke-width="2"/></svg>{{ pinArea }} · not your usual area</div>
+        <div style="font:800 22px 'Archivo';margin-top:5px;">Verified garages near you</div>
+        <div style="font:400 13px 'Manrope';color:#5A645E;margin-top:5px;line-height:1.45;">No one in your network here — so these are <b style="color:var(--ac);">AutoCheck-verified</b>: vetted by us, rated only by drivers who actually booked through the app.</div>
+      </div>
+      <div style="padding:0 20px 14px;">
+        <div onClick="{{ toRoadside }}" style="display:flex;align-items:center;gap:12px;background:#FBEAE1;border:1px solid #F2C9B5;border-radius:14px;padding:13px 14px;cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#C2410C;display:flex;align-items:center;justify-content:center;flex:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11m-14 0h14m-14 0a2 2 0 00-2 2v3h2m14-5a2 2 0 012 2v3h-2M7 16h10" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+          <div style="flex:1;"><div style="font:700 14px 'Manrope';color:#7C2D12;">Can't move the car?</div><div style="font:400 12px 'Manrope';color:#9A4422;margin-top:1px;">Request roadside help or a tow</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#C2410C" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div style="padding:0 20px;">
+      <sc-for list="{{ nyeri }}" as="g" hint-placeholder-count="3">
+        <div onClick="{{ g.onClick }}" style="background:#fff;border:1px solid #E2E8E5;border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;box-shadow:0 2px 10px rgba(15,40,30,.03);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;"><span style="font:700 16px 'Archivo';">{{ g.name }}</span><svg width="15" height="15" viewBox="0 0 24 24" fill="var(--ac)"><path d="M12 2l2.2 1.6 2.7-.2 1 2.5 2.3 1.4-.7 2.6.7 2.6-2.3 1.4-1 2.5-2.7-.2L12 22l-2.2-1.6-2.7.2-1-2.5L3.8 16.3l.7-2.6-.7-2.6 2.3-1.4 1-2.5 2.7.2z"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div style="font:400 12px 'Manrope';color:#7B857F;margin-top:2px;">{{ g.area }} · {{ g.dist }}</div>
+            </div>
+            <span style="display:flex;align-items:center;gap:3px;flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#E8A33A"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg><span style="font:700 13px 'Manrope';color:#33403A;">{{ g.rating }}</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;margin-top:11px;">
+            <span style="font:600 10px 'Manrope';background:var(--acs);color:var(--acd);padding:4px 8px;border-radius:7px;">✓ AutoCheck-verified</span>
+            <span style="font:500 11px 'Manrope';color:#7B857F;">{{ g.visits }} verified visits</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #EDF1EF;">
+            <span style="display:flex;align-items:center;gap:7px;"><span class="pdot" style="width:8px;height:8px;border-radius:50%;background:var(--ac);display:inline-block;"></span><span style="font:600 12px 'Manrope';color:var(--ac);">{{ g.avail }}</span></span>
+            <span style="font:500 12px 'Manrope';color:#7B857F;">{{ g.open }}</span>
+          </div>
+        </div>
+      </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ROADSIDE FORM -->
+    <sc-if value="{{ isRoadside }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 20px 96px;overflow-y:auto;color:#0F1A14;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E2E8E5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#0F1A14" stroke-width="2.2" stroke-linecap="round"/></svg></div><span style="font:600 13px 'Manrope';color:#7B857F;">Roadside help</span></div>
+      <div style="font:800 22px 'Archivo';margin-bottom:4px;">What's happened?</div>
+      <div style="font:400 13px 'Manrope';color:#7B857F;margin-bottom:16px;">We'll send the nearest verified garage or tow to your pin.</div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px;">
+        <sc-for list="{{ roadOpts }}" as="o" hint-placeholder-count="4">
+          <div onClick="{{ o.onClick }}" style="display:flex;align-items:center;gap:12px;background:{{ o.bg }};border:1.5px solid {{ o.bd }};border-radius:14px;padding:14px;cursor:pointer;">
+            <div style="width:34px;height:34px;border-radius:10px;background:{{ o.iconbg }};display:flex;align-items:center;justify-content:center;flex:none;font-size:17px;">{{ o.emoji }}</div>
+            <span style="font:600 14px 'Manrope';color:{{ o.fg }};">{{ o.label }}</span>
+            <sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-left:auto;"><circle cx="12" cy="12" r="10" fill="var(--ac)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:14px;display:flex;align-items:center;gap:11px;margin-bottom:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke="var(--ac)" stroke-width="1.8"/><circle cx="12" cy="10" r="2.3" stroke="var(--ac)" stroke-width="1.8"/></svg>
+        <div style="flex:1;"><div style="font:700 13px 'Manrope';">Your location</div><div style="font:400 12px 'Manrope';color:#7B857F;">{{ pinArea }} · pin shared</div></div>
+        <span class="pdot" style="width:9px;height:9px;border-radius:50%;background:var(--ac);"></span>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 24px;background:linear-gradient(to top,#F6F8F7 72%,transparent);"><div onClick="{{ requestRoad }}" style="background:#C2410C;color:#fff;border-radius:14px;padding:16px;text-align:center;font:700 15px 'Manrope';cursor:pointer;box-shadow:0 8px 18px rgba(194,65,12,.28);">Request help now</div></div>
+    </div>
+    </sc-if>
+
+    <!-- ROADSIDE DISPATCHED -->
+    <sc-if value="{{ isRoadDone }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 20px 18px;overflow-y:auto;color:#0F1A14;">
+      <div style="text-align:center;padding:14px 0 8px;">
+        <div style="width:76px;height:76px;border-radius:50%;background:#C2410C;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;position:relative;">
+          <div style="position:absolute;inset:0;border-radius:50%;background:#C2410C;opacity:.3;animation:ping 1.8s ease-out infinite;"></div>
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11m-14 0h14m-14 0a2 2 0 00-2 2v3h2m14-5a2 2 0 012 2v3h-2M7 16h10" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="font:800 22px 'Archivo';">Help is on the way</div>
+        <div style="font:400 13px 'Manrope';color:#7B857F;margin-top:4px;">Mt Kenya Auto Repairs · {{ pinArea }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E8E5;border-radius:16px;padding:16px;margin-top:8px;display:flex;align-items:center;gap:13px;">
+        <div style="width:46px;height:46px;border-radius:50%;background:#FBEAE1;display:flex;align-items:center;justify-content:center;font:700 16px 'Manrope';color:#C2410C;">SM</div>
+        <div style="flex:1;"><div style="font:700 15px 'Archivo';">Samuel M.</div><div style="font:400 12px 'Manrope';color:#7B857F;">Recovery driver · ⭐ 4.9</div></div>
+        <div style="text-align:right;"><div style="font:800 18px 'Archivo';color:#C2410C;">12 min</div><div style="font:400 11px 'Manrope';color:#7B857F;">away</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:16px;margin-top:13px;">
+        <div style="font:700 11px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin-bottom:14px;">STATUS</div>
+        <sc-for list="{{ roadTrack }}" as="t" hint-placeholder-count="4">
+          <div style="display:flex;gap:12px;"><div style="display:flex;flex-direction:column;align-items:center;"><span style="width:14px;height:14px;border-radius:50%;background:{{ t.dot }};border:2px solid {{ t.ring }};flex:none;"></span><span style="width:2px;flex:1;background:{{ t.line }};min-height:16px;"></span></div><div style="padding-bottom:14px;"><div style="font:700 14px 'Manrope';color:{{ t.fg }};">{{ t.label }}</div><div style="font:400 12px 'Manrope';color:#7B857F;">{{ t.time }}</div></div></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:9px;margin-top:13px;">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#C2410C;border-radius:13px;padding:14px;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A15 15 0 013 6a2 2 0 012-2z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg><span style="font:700 13px 'Manrope';color:#fff;">Call driver</span></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:14px;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-12 7.5L3 21l2-6a8.5 8.5 0 1116-3.5z" stroke="#0F1A14" stroke-width="2" stroke-linejoin="round"/></svg><span style="font:600 13px 'Manrope';color:#33403A;">Message</span></div>
+      </div>
+      <div onClick="{{ toHome }}" style="margin-top:11px;text-align:center;font:600 13px 'Manrope';color:#7B857F;cursor:pointer;padding:10px;">Back to home</div>
+    </div>
+    </sc-if>
+
+    <!-- DETAIL -->
+    <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 0 96px;overflow-y:auto;color:#0F1A14;">
+      <div style="padding:0 20px;display:flex;align-items:center;gap:12px;margin-bottom:16px;"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E2E8E5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#0F1A14" stroke-width="2.2" stroke-linecap="round"/></svg></div><span style="font:600 13px 'Manrope';color:#7B857F;">{{ detailKicker }}</span></div>
+      <div style="padding:0 20px;">
+        <div style="display:flex;align-items:center;gap:7px;"><span style="font:800 23px 'Archivo';">{{ g.name }}</span><svg width="19" height="19" viewBox="0 0 24 24" fill="var(--ac)"><path d="M12 2l2.2 1.6 2.7-.2 1 2.5 2.3 1.4-.7 2.6.7 2.6-2.3 1.4-1 2.5-2.7-.2L12 22l-2.2-1.6-2.7.2-1-2.5L3.8 16.3l.7-2.6-.7-2.6 2.3-1.4 1-2.5 2.7.2z"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="font:400 13px 'Manrope';color:#7B857F;margin-top:2px;">{{ g.area }} · {{ g.dist }} · open till 6 PM</div>
+      </div>
+      <div style="margin:16px 20px 0;background:#fff;border:1px solid #E2E8E5;border-radius:16px;padding:16px;">
+        <div style="font:700 11px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin-bottom:11px;">WHY YOU CAN TRUST THEM</div>
+        <sc-if value="{{ g.isVerifiedMode }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--acs);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke="var(--ac)" stroke-width="2" stroke-linejoin="round"/><path d="M9.5 12l1.8 1.8L15 10" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div style="font:500 13px 'Manrope';color:#33403A;line-height:1.4;">{{ g.circleText }}</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ g.isCircleMode }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;">
+            <div style="display:flex;flex:none;">
+              <sc-for list="{{ g.circleAvatars }}" as="av" hint-placeholder-count="3">
+                <span style="width:30px;height:30px;border-radius:50%;background:{{ av.c }};color:#fff;font:700 12px 'Manrope';display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;margin-left:-8px;">{{ av.i }}</span>
+              </sc-for>
+            </div>
+            <div style="font:500 13px 'Manrope';color:#33403A;line-height:1.4;">{{ g.circleText }}</div>
+          </div>
+        </sc-if>
+        <div style="background:#F4F7F5;border-radius:12px;padding:13px;">
+          <div style="color:#E8A33A;font-size:13px;margin-bottom:6px;">★★★★★</div>
+          <div style="font:400 13px 'Manrope';color:#33403A;line-height:1.55;">"{{ g.quote }}"</div>
+          <div style="font:600 11px 'Manrope';color:#7B857F;margin-top:8px;">— {{ g.quoteBy }}</div>
+        </div>
+      </div>
+      <div style="margin:14px 20px 0;background:#fff;border:1px solid #E2E8E5;border-radius:16px;padding:16px;">
+        <div style="font:700 11px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin-bottom:11px;">VERIFIED</div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:center;gap:9px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4L19 7" stroke="var(--ac)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font:500 13px 'Manrope';color:#33403A;">NTSA-approved inspection centre</span></div>
+          <div style="display:flex;align-items:center;gap:9px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4L19 7" stroke="var(--ac)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font:500 13px 'Manrope';color:#33403A;">Written quote before any work begins</span></div>
+          <div style="display:flex;align-items:center;gap:9px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4L19 7" stroke="var(--ac)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font:500 13px 'Manrope';color:#33403A;">Pay by M-Pesa — receipt every time</span></div>
+        </div>
+      </div>
+      <div style="margin:14px 20px 0;background:var(--acs);border-radius:14px;padding:14px;display:flex;align-items:center;gap:11px;">
+        <span class="pdot" style="width:10px;height:10px;border-radius:50%;background:var(--ac);display:inline-block;flex:none;"></span>
+        <div style="font:600 13px 'Manrope';color:var(--acd);">Next opening {{ g.next }}</div>
+        <span style="margin-left:auto;font:400 12px 'Manrope';color:#5A645E;">{{ g.bays }} bays</span>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 24px;background:linear-gradient(to top,#F6F8F7 72%,transparent);"><div onClick="{{ toIssue }}" style="background:var(--ac);color:#fff;border-radius:14px;padding:16px;text-align:center;font:700 15px 'Manrope';cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.14);">Book your car in →</div></div>
+    </div>
+    </sc-if>
+
+    <!-- ISSUE -->
+    <sc-if value="{{ isIssue }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 20px 96px;overflow-y:auto;color:#0F1A14;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E2E8E5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#0F1A14" stroke-width="2.2" stroke-linecap="round"/></svg></div><span style="font:600 13px 'Manrope';color:#7B857F;">Step 1 of 2 · {{ g.name }}</span></div>
+      <div style="display:flex;gap:5px;margin-bottom:16px;"><div style="flex:1;height:4px;border-radius:2px;background:var(--ac);"></div><div style="flex:1;height:4px;border-radius:2px;background:#DCE5E0;"></div></div>
+      <div style="font:800 22px 'Archivo';margin-bottom:4px;">What needs attention?</div>
+      <div style="font:400 13px 'Manrope';color:#7B857F;margin-bottom:16px;">Tell them now so the right bay and parts are ready when you arrive.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;">
+        <sc-for list="{{ issues }}" as="it" hint-placeholder-count="8">
+          <div onClick="{{ it.onClick }}" style="font:600 13px 'Manrope';padding:9px 14px;border-radius:11px;cursor:pointer;border:1px solid {{ it.bd }};background:{{ it.bg }};color:{{ it.fg }};">{{ it.name }}</div>
+        </sc-for>
+      </div>
+      <div style="font:700 12px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin-bottom:8px;">DESCRIBE IT</div>
+      <textarea value="{{ note }}" onChange="{{ onNote }}" placeholder="e.g. Knocking from front-left when braking; steering pulls to one side…" style="width:100%;height:84px;resize:none;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:13px;color:#0F1A14;font:400 13px 'Manrope';outline:none;"></textarea>
+
+      <div style="display:flex;gap:8px;margin-top:11px;">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid #E2E8E5;border-radius:12px;padding:13px;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2" stroke="var(--ac)" stroke-width="2"/><circle cx="12" cy="12.5" r="3.2" stroke="var(--ac)" stroke-width="2"/><path d="M8 6l1.5-2h5L16 6" stroke="var(--ac)" stroke-width="2" stroke-linejoin="round"/></svg><span style="font:600 13px 'Manrope';color:#33403A;">Photo</span><input type="file" accept="image/*" capture="environment" multiple onChange="{{ onPhoto }}" style="display:none;"></label>
+        <sc-if value="{{ voiceIdle }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ startRec }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid #E2E8E5;border-radius:12px;padding:13px;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="var(--ac)" stroke-width="2"/><path d="M6 11a6 6 0 0012 0M12 17v3" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/></svg><span style="font:600 13px 'Manrope';color:#33403A;">Voice</span></div>
+        </sc-if>
+        <sc-if value="{{ recording }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ stopRec }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#FBE9E7;border:1px solid #F0B7AE;border-radius:12px;padding:13px;cursor:pointer;"><span style="width:10px;height:10px;border-radius:2px;background:#D7382B;animation:recpulse 1s infinite;"></span><span style="font:700 13px 'Space Mono';color:#B2261B;">{{ recTime }}</span><span style="font:600 12px 'Manrope';color:#B2261B;">Stop</span></div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ hasVoice }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;display:flex;align-items:center;gap:10px;background:var(--acs);border:1px solid var(--ac);border-radius:12px;padding:11px 13px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+          <div style="display:flex;align-items:flex-end;gap:2px;height:20px;flex:1;">
+            <span style="width:3px;height:9px;background:var(--ac);border-radius:2px;animation:wave 1s ease-in-out infinite;"></span>
+            <span style="width:3px;height:15px;background:var(--ac);border-radius:2px;animation:wave 1s ease-in-out .1s infinite;"></span>
+            <span style="width:3px;height:7px;background:var(--ac);border-radius:2px;animation:wave 1s ease-in-out .2s infinite;"></span>
+            <span style="width:3px;height:17px;background:var(--ac);border-radius:2px;animation:wave 1s ease-in-out .3s infinite;"></span>
+            <span style="width:3px;height:11px;background:var(--ac);border-radius:2px;animation:wave 1s ease-in-out .15s infinite;"></span>
+            <span style="width:3px;height:14px;background:var(--ac);border-radius:2px;animation:wave 1s ease-in-out .25s infinite;"></span>
+            <span style="width:3px;height:8px;background:var(--ac);border-radius:2px;animation:wave 1s ease-in-out .05s infinite;"></span>
+          </div>
+          <span style="font:700 12px 'Space Mono';color:var(--acd);">{{ voiceTime }}</span>
+          <div onClick="{{ delVoice }}" style="cursor:pointer;color:#9AA6A0;font-size:16px;padding:0 2px;">✕</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasPhotos }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;">
+          <sc-for list="{{ photoItems }}" as="p" hint-placeholder-count="0">
+            <div style="position:relative;width:62px;height:62px;border-radius:11px;overflow:hidden;border:1px solid #E2E8E5;background:{{ p.bg }};background-size:cover;background-position:center;">
+              <div onClick="{{ p.onRemove }}" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div onClick="{{ runAI }}" style="margin-top:11px;display:flex;align-items:center;gap:10px;background:var(--acs);border:1px solid var(--ac);border-radius:13px;padding:13px;cursor:pointer;">
+        <sc-if value="{{ aiLoading }}" hint-placeholder-val="{{ false }}">
+          <div class="spin" style="width:18px;height:18px;border-radius:50%;border:2.5px solid var(--acs);border-top-color:var(--ac);flex:none;"></div>
+        </sc-if>
+        <sc-if value="{{ aiIdleIcon }}" hint-placeholder-val="{{ true }}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z" fill="var(--ac)"/><circle cx="18" cy="17" r="1.6" fill="var(--ac)"/></svg>
+        </sc-if>
+        <div style="flex:1;"><div style="font:700 13px 'Manrope';color:#0F1A14;">{{ aiBtnTitle }}</div><div style="font:400 12px 'Manrope';color:#5A645E;">Plain words → clear symptoms for the technician</div></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <sc-if value="{{ aiDone }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:11px;background:#fff;border:1px solid var(--ac);border-radius:13px;padding:13px;"><div style="font:700 11px 'Space Mono';color:var(--acd);letter-spacing:.06em;margin-bottom:6px;">STRUCTURED FOR TECHNICIAN</div><div style="font:400 13px 'Manrope';color:#33403A;line-height:1.55;">{{ aiText }}</div></div>
+      </sc-if>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 24px;background:linear-gradient(to top,#F6F8F7 72%,transparent);"><div onClick="{{ toSlot }}" style="background:var(--ac);color:#fff;border-radius:14px;padding:16px;text-align:center;font:700 15px 'Manrope';cursor:pointer;">Choose your slot →</div></div>
+    </div>
+    </sc-if>
+
+    <!-- SLOT -->
+    <sc-if value="{{ isSlot }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 20px 110px;overflow-y:auto;color:#0F1A14;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E2E8E5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#0F1A14" stroke-width="2.2" stroke-linecap="round"/></svg></div><span style="font:600 13px 'Manrope';color:#7B857F;">Step 2 of 2</span></div>
+      <div style="display:flex;gap:5px;margin-bottom:16px;"><div style="flex:1;height:4px;border-radius:2px;background:var(--ac);"></div><div style="flex:1;height:4px;border-radius:2px;background:var(--ac);"></div></div>
+      <div style="font:800 22px 'Archivo';margin-bottom:4px;">Reserve your spot</div>
+      <div style="font:400 13px 'Manrope';color:#7B857F;margin-bottom:14px;">A bay is held in your name — drive in and skip the wait.</div>
+
+      <div style="background:var(--acs);border-radius:13px;padding:13px 14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex:none;"><circle cx="12" cy="12" r="9" stroke="var(--acd)" stroke-width="2"/><path d="M12 7v5l3 2" stroke="var(--acd)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font:700 13px 'Manrope';color:var(--acd);">Estimated time in bay: {{ durWindow }}</span>
+        </div>
+        <div style="font:400 12px 'Manrope';color:var(--acd);opacity:.82;margin-top:5px;line-height:1.4;">Based on what you described — the garage confirms the exact time once they inspect.</div>
+      </div>
+
+      <div style="font:700 12px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin-bottom:8px;">WAIT OR LEAVE IT?</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <div onClick="{{ setWait }}" style="flex:1;text-align:center;border-radius:11px;padding:12px;font:700 12.5px 'Manrope';border:1px solid {{ waitPillBd }};background:{{ waitPillBg }};color:{{ waitPillFg }};cursor:pointer;">I'll wait for it</div>
+        <div onClick="{{ setDrop }}" style="flex:1;text-align:center;border-radius:11px;padding:12px;font:700 12.5px 'Manrope';border:1px solid {{ dropPillBd }};background:{{ dropPillBg }};color:{{ dropPillFg }};cursor:pointer;">Leave the car</div>
+      </div>
+      <sc-if value="{{ waitNoteShow }}" hint-placeholder-val="{{ false }}">
+        <div style="font:400 11px 'Manrope';color:#7B857F;margin-bottom:14px;line-height:1.4;">{{ waitNote }}</div>
+      </sc-if>
+
+      <div style="font:700 12px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin:6px 0 9px;">PICK A TIME</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:8px;">
+        <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="4">
+          <div onClick="{{ sl.onClick }}" style="background:{{ sl.bg }};border:1px solid {{ sl.bd }};border-radius:13px;padding:14px;cursor:pointer;"><div style="font:700 11px 'Manrope';color:#7B857F;text-transform:uppercase;letter-spacing:.04em;">{{ sl.day }}</div><div style="font:800 17px 'Archivo';color:{{ sl.fg }};margin-top:3px;">{{ sl.time }}</div><div style="font:400 11px 'Manrope';color:#7B857F;margin-top:4px;">{{ sl.note }}</div></div>
+        </sc-for>
+      </div>
+      <div style="margin-top:10px;background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:16px;">
+        <div style="font:700 11px 'Space Mono';color:#7B857F;letter-spacing:.06em;margin-bottom:11px;">ESTIMATED COST</div>
+        <div style="display:flex;justify-content:space-between;font:400 13px 'Manrope';color:#33403A;margin-bottom:7px;"><span>Inspection</span><span>KSh 500</span></div>
+        <div style="display:flex;justify-content:space-between;font:400 13px 'Manrope';color:#33403A;margin-bottom:7px;"><span>Labour (est.)</span><span>KSh 1,500–3,000</span></div>
+        <div style="display:flex;justify-content:space-between;font:400 13px 'Manrope';color:#33403A;"><span>Parts</span><span>confirmed after check</span></div>
+        <div style="height:1px;background:#EDF1EF;margin:12px 0;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font:700 14px 'Archivo';">Likely total</span><span style="font:800 18px 'Archivo';color:var(--ac);">KSh 2,000–3,500</span></div>
+        <div style="font:400 11px 'Manrope';color:#7B857F;margin-top:8px;">Pay a small deposit via M-Pesa to hold the bay. Balance after you approve the written quote.</div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 24px;background:linear-gradient(to top,#F6F8F7 72%,transparent);"><div onClick="{{ confirm }}" style="background:{{ cta1bg }};color:{{ cta1fg }};border-radius:14px;padding:16px;text-align:center;font:700 15px 'Manrope';cursor:pointer;">{{ cta1 }}</div></div>
+    </div>
+    </sc-if>
+
+    <!-- DONE -->
+    <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+    <div class="scr phscroll" style="position:absolute;inset:0;padding:58px 20px 18px;overflow-y:auto;color:#0F1A14;">
+      <div style="text-align:center;padding:18px 0 8px;">
+        <div style="width:76px;height:76px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="font:800 23px 'Archivo';">Your bay is reserved</div>
+        <div style="font:400 13px 'Manrope';color:#7B857F;margin-top:4px;">{{ g.name }} · {{ slotLabel }}</div>
+      </div>
+      <div style="background:var(--acs);border-radius:14px;padding:13px 15px;margin-top:6px;display:flex;align-items:center;gap:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;"><path d="M5 12.5l4 4L19 7" stroke="var(--acd)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="font:500 12px 'Manrope';color:var(--acd);">Drive straight in — no queue. They've seen your issue already.</div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:16px;margin-top:13px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font:700 11px 'Space Mono';color:#7B857F;letter-spacing:.06em;">LIVE STATUS</span><span style="font:500 11px 'Space Mono';color:var(--ac);">#AG-4821</span></div>
+        <div style="margin-top:14px;">
+          <sc-for list="{{ track }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex;gap:12px;"><div style="display:flex;flex-direction:column;align-items:center;"><span style="width:14px;height:14px;border-radius:50%;background:{{ t.dot }};border:2px solid {{ t.ring }};flex:none;"></span><span style="width:2px;flex:1;background:{{ t.line }};min-height:18px;"></span></div><div style="padding-bottom:14px;"><div style="font:700 14px 'Manrope';color:{{ t.fg }};">{{ t.label }}</div><div style="font:400 12px 'Manrope';color:#7B857F;">{{ t.time }}</div></div></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;gap:9px;margin-top:13px;">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:14px;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A15 15 0 013 6a2 2 0 012-2z" stroke="var(--ac)" stroke-width="2" stroke-linejoin="round"/></svg><span style="font:600 13px 'Manrope';color:#33403A;">Call</span></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:14px;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-12 7.5L3 21l2-6a8.5 8.5 0 1116-3.5z" stroke="var(--ac)" stroke-width="2" stroke-linejoin="round"/></svg><span style="font:600 13px 'Manrope';color:#33403A;">Message</span></div>
+      </div>
+      <div onClick="{{ reset }}" style="margin-top:11px;text-align:center;font:600 13px 'Manrope';color:#7B857F;cursor:pointer;padding:10px;">{{ doneBack }}</div>
+    </div>
+    </sc-if>
+
+    <!-- WHATSAPP BOOKING -->
+    <sc-if value="{{ isWhatsApp }}" hint-placeholder-val="{{ false }}">
+    <div class="scr" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#E7DED5;">
+      <div style="padding:44px 12px 10px;background:#008069;display:flex;align-items:center;gap:9px;flex:none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <div style="width:38px;height:38px;border-radius:50%;background:{{ waAvatarBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px 'Archivo';flex:none;">{{ waMark }}</div>
+        <div style="flex:1;min-width:0;"><div style="font:700 15px 'Manrope';color:#fff;">{{ waName }}</div><div style="font:400 11px 'Manrope';color:#CFE9E2;">{{ waSub }}</div></div>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M23 7l-7 5 7 5V7z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><rect x="1" y="5" width="15" height="14" rx="2" stroke="#fff" stroke-width="2"/></svg>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" style="margin-left:4px;"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A15 15 0 013 6a2 2 0 012-2z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="flex:none;background:#E7DED5;padding:8px 12px 4px;display:flex;justify-content:center;">
+        <div style="display:flex;background:#D7CFC4;border-radius:9px;padding:3px;gap:3px;">
+          <div onClick="{{ setSideDriver }}" style="padding:6px 14px;border-radius:7px;font:700 11px 'Manrope';cursor:pointer;background:{{ waDrvBg }};color:{{ waDrvFg }};">Driver's chat</div>
+          <div onClick="{{ setSideOwner }}" style="padding:6px 14px;border-radius:7px;font:700 11px 'Manrope';cursor:pointer;background:{{ waOwnBg }};color:{{ waOwnFg }};">Fundi's chat</div>
+        </div>
+      </div>
+      <div class="phscroll" ref="{{ chatRef }}" style="flex:1;overflow-y:auto;padding:10px 12px;">
+        <div style="text-align:center;margin-bottom:11px;"><span style="background:#FCF4CB;color:#54656F;font:500 11px 'Manrope';padding:5px 11px;border-radius:7px;">🔒 Messages are end-to-end encrypted</span></div>
+        <sc-for list="{{ waMsgs }}" as="m" hint-placeholder-count="2">
+          <div style="display:flex;justify-content:{{ m.justify }};margin-bottom:7px;">
+            <sc-if value="{{ m.isMeta }}" hint-placeholder-val="{{ true }}"><span style="background:#D7E9DF;color:#54656F;font:700 10px 'Manrope';letter-spacing:.05em;padding:4px 11px;border-radius:7px;">{{ m.text }}</span></sc-if>
+            <sc-if value="{{ m.isBot }}" hint-placeholder-val="{{ false }}"><div style="max-width:80%;background:#fff;border-radius:3px 9px 9px 9px;padding:7px 10px 5px;box-shadow:0 1px .8px rgba(0,0,0,.13);"><div style="font:400 13.5px 'Manrope';color:#111B21;line-height:1.42;">{{ m.text }}</div><div style="font:400 10px 'Manrope';color:#8696A0;text-align:right;margin-top:2px;">{{ m.time }}</div></div></sc-if>
+            <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}"><div style="max-width:80%;background:#D9FDD3;border-radius:9px 3px 9px 9px;padding:7px 10px 5px;box-shadow:0 1px .8px rgba(0,0,0,.13);"><div style="font:400 13.5px 'Manrope';color:#111B21;line-height:1.42;">{{ m.text }}</div><div style="font:400 10px 'Manrope';color:#67928B;text-align:right;margin-top:2px;">{{ m.time }} ✓✓</div></div></sc-if>
+            <sc-if value="{{ m.isCard }}" hint-placeholder-val="{{ false }}"><div style="max-width:85%;background:#fff;border-radius:9px;box-shadow:0 1px .8px rgba(0,0,0,.13);overflow:hidden;"><div style="background:var(--ac);height:5px;"></div><div style="padding:12px 13px;"><div style="font:800 15px 'Archivo';color:#111B21;">{{ m.title }}</div><div style="font:600 13px 'Manrope';color:#111B21;margin-top:4px;">{{ m.line }}</div><div style="font:500 11px 'Space Mono';color:#8696A0;margin-top:2px;">{{ m.ref }}</div><div style="font:400 12.5px 'Manrope';color:#54656F;margin-top:8px;line-height:1.45;">{{ m.sub }}</div></div></div></sc-if>
+            <sc-if value="{{ m.isNote }}" hint-placeholder-val="{{ false }}"><div style="max-width:88%;background:#FCF4CB;border-radius:8px;padding:9px 11px;"><div style="font:400 12px 'Manrope';color:#5B6168;line-height:1.45;">{{ m.text }}</div></div></sc-if>
+            <sc-if value="{{ m.isBook }}" hint-placeholder-val="{{ false }}"><div style="width:88%;background:#fff;border-radius:9px;box-shadow:0 1px .8px rgba(0,0,0,.13);overflow:hidden;"><div style="padding:12px 13px;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font:800 14px 'Archivo';color:#111B21;">{{ m.name }}</span><span style="font:700 9px 'Manrope';background:#E7F3EC;color:#0A6A44;padding:4px 8px;border-radius:6px;">{{ m.deposit }}</span></div><div style="font:500 12px 'Manrope';color:#54656F;margin-top:3px;">{{ m.car }}</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;"><sc-for list="{{ m.chips }}" as="c" hint-placeholder-count="2"><span style="font:600 10px 'Manrope';background:#F0F2F0;color:#33403A;padding:3px 8px;border-radius:6px;">{{ c }}</span></sc-for></div><div style="margin-top:9px;background:#F6F8F7;border-radius:8px;padding:9px 10px;font:400 12px 'Manrope';color:#54656F;line-height:1.45;">📋 {{ m.summary }}</div><div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid #EEF0EE;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#0E7C50" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#0E7C50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font:700 12px 'Manrope';color:#111B21;">{{ m.slot }}</span></div></div></div></sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ waHasReplies }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:5px;">
+            <sc-for list="{{ waReplies }}" as="r" hint-placeholder-count="3">
+              <div onClick="{{ r.onClick }}" style="background:{{ r.bg }};color:{{ r.fg }};border:1px solid {{ r.bd }};border-radius:9px;padding:11px;text-align:center;font:700 13px 'Manrope';cursor:pointer;box-shadow:0 1px .8px rgba(0,0,0,.1);">{{ r.label }}</div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ waDone }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ waReset }}" style="text-align:center;margin-top:12px;font:600 12px 'Manrope';color:#008069;cursor:pointer;padding:8px;">↻ Start the demo again</div>
+        </sc-if>
+        <div style="height:6px;"></div>
+      </div>
+      <div style="flex:none;background:#F0F2F5;padding:8px 10px 22px;display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;background:#fff;border-radius:22px;padding:10px 15px;font:400 13px 'Manrope';color:#8696A0;display:flex;align-items:center;gap:8px;">😊 <span>Message</span></div>
+        <div style="width:42px;height:42px;border-radius:50%;background:#008069;display:flex;align-items:center;justify-content:center;flex:none;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="#fff" stroke-width="2"/><path d="M6 11a6 6 0 0012 0M12 17v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ OWNER DASHBOARD ============ -->
+    <sc-if value="{{ isOwner }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;">
+      <div style="padding:58px 20px 14px;background:#fff;border-bottom:1px solid #ECF0EE;display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:9px;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;font:800 14px 'Archivo';">{{ brandMark }}</div>
+        <div style="flex:1;"><div style="font:800 16px 'Archivo';">{{ brandShort }}</div><div style="font:500 11px 'Manrope';color:#7B857F;">Garage dashboard</div></div>
+        <div style="display:flex;align-items:center;gap:6px;background:var(--acs);padding:6px 10px;border-radius:9px;"><span class="pdot" style="width:7px;height:7px;border-radius:50%;background:var(--ac);"></span><span style="font:700 11px 'Manrope';color:var(--acd);">{{ acceptingLabel }}</span></div>
+      </div>
+
+      <div class="phscroll" style="flex:1;overflow-y:auto;background:#F6F8F7;">
+        <!-- BOOKINGS TAB -->
+        <sc-if value="{{ ownerBookings }}" hint-placeholder-val="{{ true }}">
+        <div class="scr" style="padding:16px 20px 20px;">
+          <div style="display:flex;gap:9px;margin-bottom:16px;">
+            <div style="flex:1;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:13px;"><div style="font:800 22px 'Archivo';color:var(--ac);">{{ todayCount }}</div><div style="font:400 11px 'Manrope';color:#7B857F;margin-top:2px;">bookings today</div></div>
+            <div style="flex:1;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:13px;"><div style="font:800 22px 'Archivo';">{{ baysUsed }}</div><div style="font:400 11px 'Manrope';color:#7B857F;margin-top:2px;">of {{ baysTotal }} bays booked</div></div>
+            <div style="flex:1;background:#fff;border:1px solid #E2E8E5;border-radius:13px;padding:13px;"><div style="font:800 22px 'Archivo';color:#C2410C;">{{ newCount }}</div><div style="font:400 11px 'Manrope';color:#7B857F;margin-top:2px;">need confirming</div></div>
+          </div>
+          <div style="font:700 13px 'Archivo';margin-bottom:11px;">Today's bookings</div>
+          <sc-for list="{{ bookings }}" as="b" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #E2E8E5;border-left:4px solid {{ b.bar }};border-radius:14px;padding:14px;margin-bottom:11px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:46px;text-align:center;flex:none;"><div style="font:800 14px 'Archivo';color:var(--ac);">{{ b.time }}</div><div style="font:400 9px 'Manrope';color:#9AA6A0;">{{ b.ampm }}</div></div>
+                <div style="width:1px;align-self:stretch;background:#ECF0EE;"></div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font:700 14px 'Manrope';">{{ b.name }}</div>
+                  <div style="font:400 12px 'Manrope';color:#7B857F;">{{ b.car }}</div>
+                </div>
+                <span style="font:700 10px 'Manrope';background:{{ b.pillBg }};color:{{ b.pillFg }};padding:5px 9px;border-radius:7px;flex:none;">{{ b.status }}</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;">
+                <sc-for list="{{ b.issues }}" as="ic" hint-placeholder-count="2">
+                  <span style="font:600 10px 'Manrope';background:#F2F5F3;color:#33403A;padding:3px 8px;border-radius:6px;">{{ ic }}</span>
+                </sc-for>
+                <sc-if value="{{ b.photo }}" hint-placeholder-val="{{ false }}"><span style="font:600 10px 'Manrope';background:var(--acs);color:var(--acd);padding:3px 8px;border-radius:6px;">📷 photo</span></sc-if>
+              </div>
+              <div style="margin-top:10px;background:#F8FAF9;border-radius:10px;padding:10px 11px;display:flex;gap:8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px;"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z" fill="var(--ac)"/></svg>
+                <div style="font:400 12px 'Manrope';color:#5A645E;line-height:1.45;">{{ b.summary }}</div>
+              </div>
+              <sc-if value="{{ b.isNew }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:8px;margin-top:11px;">
+                  <div onClick="{{ b.confirm }}" style="flex:1;text-align:center;background:var(--ac);color:#fff;border-radius:10px;padding:10px;font:700 12px 'Manrope';cursor:pointer;">Confirm slot</div>
+                  <div style="flex:none;display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:1px solid #E2E8E5;border-radius:10px;padding:10px 13px;font:600 12px 'Manrope';color:#33403A;cursor:pointer;">Call</div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+
+        <!-- AVAILABILITY TAB -->
+        <sc-if value="{{ ownerHours }}" hint-placeholder-val="{{ false }}">
+        <div class="scr" style="padding:16px 20px 20px;">
+          <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:1;"><div style="font:700 14px 'Manrope';">Accepting bookings</div><div style="font:400 12px 'Manrope';color:#7B857F;margin-top:2px;">Turn off when the yard is full</div></div>
+            <div onClick="{{ toggleAccepting }}" style="width:48px;height:28px;border-radius:16px;background:{{ acceptingBg }};position:relative;cursor:pointer;transition:background .2s;"><span style="position:absolute;top:3px;left:{{ acceptingX }};width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s;"></span></div>
+          </div>
+          <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:16px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div><div style="font:700 14px 'Manrope';">Working bays</div><div style="font:400 12px 'Manrope';color:#7B857F;margin-top:2px;">How many cars at once</div></div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div onClick="{{ baysDown }}" style="width:32px;height:32px;border-radius:9px;background:#F2F5F3;display:flex;align-items:center;justify-content:center;font:700 18px 'Manrope';color:#33403A;cursor:pointer;">−</div>
+                <span style="font:800 20px 'Archivo';width:18px;text-align:center;">{{ baysTotal }}</span>
+                <div onClick="{{ baysUp }}" style="width:32px;height:32px;border-radius:9px;background:var(--acs);display:flex;align-items:center;justify-content:center;font:700 18px 'Manrope';color:var(--ac);cursor:pointer;">+</div>
+              </div>
+            </div>
+          </div>
+          <div style="font:700 13px 'Archivo';margin-bottom:11px;">Service durations</div>
+          <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:4px 16px;margin-bottom:8px;">
+            <sc-for list="{{ ownerServices }}" as="sv" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F0F3F1;">
+                <span style="font:600 13px 'Manrope';color:#33403A;">{{ sv.label }}</span>
+                <div onClick="{{ sv.onClick }}" style="font:700 12px 'Manrope';color:var(--acd);background:var(--acs);padding:6px 13px;border-radius:8px;cursor:pointer;min-width:62px;text-align:center;">{{ sv.dur }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font:400 12px 'Manrope';color:#7B857F;line-height:1.5;margin-bottom:18px;">Tap a duration to adjust. Each booking blocks this much bay-time — so drivers only see slots that actually fit, and you don't get double-booked.</div>
+
+          <div style="font:700 13px 'Archivo';margin-bottom:11px;">Today's slots</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;">
+            <sc-for list="{{ ownerSlots }}" as="s" hint-placeholder-count="6">
+              <div onClick="{{ s.onClick }}" style="background:{{ s.bg }};border:1px solid {{ s.bd }};border-radius:11px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                <span style="font:700 13px 'Manrope';color:{{ s.fg }};">{{ s.time }}</span>
+                <span style="font:600 10px 'Manrope';color:{{ s.tagfg }};">{{ s.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font:400 12px 'Manrope';color:#7B857F;line-height:1.5;">Tap a free slot to block it (lunch, parts run). Booked slots are held for drivers.</div>
+        </div>
+        </sc-if>
+
+        <!-- SETTINGS TAB -->
+        <sc-if value="{{ ownerSettings }}" hint-placeholder-val="{{ false }}">
+        <div class="scr" style="padding:16px 20px 20px;">
+          <div style="font:700 13px 'Archivo';margin-bottom:11px;">Your booking link</div>
+          <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:16px;margin-bottom:14px;">
+            <div style="display:flex;gap:14px;align-items:center;">
+              <div style="width:84px;height:84px;border-radius:12px;background:#0F1A14;flex:none;padding:9px;">
+                <div style="width:100%;height:100%;border-radius:4px;background-image:radial-gradient(#fff 38%,transparent 40%);background-size:9px 9px;position:relative;">
+                  <span style="position:absolute;top:0;left:0;width:22px;height:22px;border:4px solid #fff;border-radius:4px;"></span>
+                  <span style="position:absolute;top:0;right:0;width:22px;height:22px;border:4px solid #fff;border-radius:4px;"></span>
+                  <span style="position:absolute;bottom:0;left:0;width:22px;height:22px;border:4px solid #fff;border-radius:4px;"></span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font:700 13px 'Manrope';">QR for your gate</div>
+                <div style="font:400 12px 'Manrope';color:#7B857F;margin-top:3px;line-height:1.4;">Print &amp; stick it up. Drivers scan to book straight in.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;margin-top:14px;background:#F2F5F3;border-radius:10px;padding:11px 13px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7L11 7" stroke="#7B857F" stroke-width="2" stroke-linecap="round"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7L13 17" stroke="#7B857F" stroke-width="2" stroke-linecap="round"/></svg>
+              <span style="flex:1;font:600 12px 'Space Mono';color:#33403A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ brandDomain }}</span>
+              <div onClick="{{ copyLink }}" style="font:700 12px 'Manrope';color:#fff;background:var(--ac);padding:7px 12px;border-radius:8px;cursor:pointer;">{{ copyLabel }}</div>
+            </div>
+          </div>
+          <div style="font:700 13px 'Archivo';margin-bottom:11px;">Branding</div>
+          <div style="background:#fff;border:1px solid #E2E8E5;border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;border-radius:11px;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px 'Archivo';">{{ brandMark }}</div>
+            <div style="flex:1;"><div style="font:700 13px 'Manrope';">{{ brandName }}</div><div style="font:400 11px 'Manrope';color:#7B857F;">Logo &amp; colour on your booking page</div></div>
+            <div style="width:26px;height:26px;border-radius:7px;background:var(--ac);border:2px solid #fff;box-shadow:0 0 0 1px #E2E8E5;"></div>
+          </div>
+          <div style="font:700 13px 'Archivo';margin-bottom:11px;">Subscription</div>
+          <div style="background:linear-gradient(150deg,var(--ac),var(--acd));border-radius:16px;padding:18px;color:#fff;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font:800 17px 'Archivo';">{{ planName }}</span>
+              <span style="font:700 14px 'Manrope';">{{ planPrice }}</span>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,.25);margin:13px 0;"></div>
+            <sc-for list="{{ planFeatures }}" as="f" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4L19 7" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font:500 13px 'Manrope';">{{ f }}</span></div>
+            </sc-for>
+            <div style="margin-top:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:11px;padding:11px;text-align:center;font:700 13px 'Manrope';cursor:pointer;">Manage plan</div>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+
+      <!-- OWNER TAB BAR -->
+      <div style="display:flex;background:#fff;border-top:1px solid #ECF0EE;padding:9px 12px 22px;">
+        <div onClick="{{ tabBookings }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="{{ tabBookingsCol }}" stroke-width="2"/><path d="M8 9h8M8 13h8M8 17h5" stroke="{{ tabBookingsCol }}" stroke-width="2" stroke-linecap="round"/></svg>
+          <span style="font:600 10px 'Manrope';color:{{ tabBookingsCol }};">Bookings</span>
+        </div>
+        <div onClick="{{ tabHours }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="{{ tabHoursCol }}" stroke-width="2"/><path d="M12 7v5l3 2" stroke="{{ tabHoursCol }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font:600 10px 'Manrope';color:{{ tabHoursCol }};">Availability</span>
+        </div>
+        <div onClick="{{ tabSettings }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="{{ tabSettingsCol }}" stroke-width="2"/><path d="M19 12a7 7 0 00-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 00-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 000 2l-2 1.5 2 3.5 2.4-1a7 7 0 001.7 1l.3 2.5h4l.3-2.5a7 7 0 001.7-1l2.4 1 2-3.5-2-1.5a7 7 0 00.1-1z" stroke="{{ tabSettingsCol }}" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          <span style="font:600 10px 'Manrope';color:{{ tabSettingsCol }};">Settings</span>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:580,&quot;height&quot;:1120}}">
+class Component extends DCLogic {
+  state = {
+    persona:'driver', tenant:'autocheck',
+    s:0, g:0, away:null,
+    issues:[], slot:null, note:'', aiDone:false, aiLoading:false, aiText:'',
+    photos:[], recording:false, recSecs:0, voice:null,
+    locPerm:true, pin:{x:50,y:46}, town:'', located:false,
+    roadType:null,
+    ownerTab:'bookings', accepting:true, baysTotal:4,
+    bookingStatuses:{}, blocked:{}, copied:false,
+    fulfil:null, durations:{},
+    waStep:0, waSymptom:'', waDetail:'', waSlot:'', waSide:'driver', waOwnerStep:0,
+  };
+
+  patch(p){ this.setState(p); }
+  toggleIssue(name){ this.setState(s=>({ issues: s.issues.includes(name)? s.issues.filter(x=>x!==name): [...s.issues,name] })); }
+  setTenant(t){ const gIndex = t==='juma'?0 : t==='westgate'?2 : this.state.g; this.setState({ tenant:t, s:0, g:gIndex, away:null, issues:[], slot:null, note:'', aiDone:false, aiText:'', photos:[], voice:null }); }
+  setPersona(p){ this.setState({ persona:p }); }
+
+  componentWillUnmount(){ if(this._timer) clearInterval(this._timer); }
+
+  THEMES = {
+    autocheck:{ name:'AutoCheck', short:'AutoCheck', label:'AutoCheck', sub:'Consumer app', mark:'A', accent:'#0E7C50', accentDark:'#0A6A44', accentSoft:'#EAF3EE', domain:'autocheck.app', plan:'Standard', price:'KSh 2,500/mo', feats:['AutoCheck sub-domain link','Bay & slot management','Issue intake + photos'] },
+    juma:{ name:'Juma Auto Garage', short:'Juma Auto', label:'Juma Auto', sub:'White-label tenant', mark:'J', accent:'#C2410C', accentDark:'#9A330A', accentSoft:'#FBEAE1', domain:'juma-auto.autocheck.app', plan:'Branded', price:'KSh 4,500/mo', feats:['Your logo & colours','Branded sub-domain','Bay & slot management'] },
+    westgate:{ name:'Westgate Auto Clinic', short:'Westgate', label:'Westgate', sub:'White-label · own domain', mark:'W', accent:'#0F766E', accentDark:'#0B5A54', accentSoft:'#E2F2F0', domain:'book.westgateauto.co.ke', plan:'Pro · custom domain', price:'KSh 7,500/mo', feats:['Your own domain + SSL','Full white-label branding','Priority listing when verified'] },
+  };
+
+  GARAGES = [
+    { name:'Juma Auto Garage', area:'Ngong Rd', dist:'1.2 km', bays:'4', next:'Today · 2:00 PM', trustType:'visits', trust:'You\u2019ve booked here 6 times', avatars:[], circleAvatars:[{i:'A',c:'#D9802B'},{i:'W',c:'#0E7C50'},{i:'+3',c:'#7B857F'}], circleText:'Aisha, Wanjiku and 3 others in your network use this garage.', quote:'Been bringing my car here for years. Booking online means I just drive straight in now.', quoteBy:'Aisha \u00b7 your contact', mode:'circle' },
+    { name:'Karanja Motors', area:'Industrial Area', dist:'3.4 km', bays:'6', next:'Today · 4:30 PM', trustType:'referral', trust:'Recommended by Aisha', avatars:[{i:'A',c:'#D9802B'}], circleAvatars:[{i:'A',c:'#D9802B'},{i:'M',c:'#0E7C50'}], circleText:'Aisha shared this garage with you. 2 people you know book here.', quote:'They never start work without calling me first with the price. Felt safe sending my daughter here.', quoteBy:'Aisha \u00b7 your contact', mode:'circle' },
+    { name:'Westgate Auto Clinic', area:'Westlands', dist:'2.1 km', bays:'5', next:'Tomorrow · 9:00 AM', trustType:'circle', trust:'Used by 4 women in your network', avatars:[{i:'N',c:'#0E7C50'},{i:'F',c:'#D9802B'}], circleAvatars:[{i:'N',c:'#0E7C50'},{i:'F',c:'#D9802B'},{i:'+2',c:'#7B857F'}], circleText:'4 women in your network book here — a garage they trust.', quote:'No one talks down to you here. Clear quote, M-Pesa receipt, done.', quoteBy:'Njeri \u00b7 your contact', mode:'circle' },
+  ];
+
+  NYERI = [
+    { name:'Mt Kenya Auto Repairs', area:'Kimathi Way, Nyeri', dist:'0.6 km', bays:'5', rating:'4.8', visits:'128', open:'Open now', avail:'Can receive you now', next:'Now', circleText:'Vetted by AutoCheck \u00b7 128 drivers booked here through the app.', quote:'Stranded on the highway, booked in 2 minutes, they sorted my car the same afternoon.', quoteBy:'Verified booking \u00b7 May 2026', mode:'verified' },
+    { name:'Dedan Motors', area:'Gakere Rd, Nyeri', dist:'1.4 km', bays:'3', rating:'4.6', visits:'74', open:'Open now', avail:'1 bay free', next:'Today · 1:30 PM', circleText:'Vetted by AutoCheck \u00b7 74 verified visits, written quotes every time.', quote:'Fair price, showed me the worn part before replacing it. Trustworthy.', quoteBy:'Verified booking \u00b7 Apr 2026', mode:'verified' },
+    { name:'Highlands Garage', area:'Ring Rd, Nyeri', dist:'2.2 km', bays:'6', rating:'4.9', visits:'203', open:'Open till 7 PM', avail:'Book ahead', next:'Today · 5:00 PM', circleText:'Vetted by AutoCheck \u00b7 203 verified visits, top-rated in Nyeri.', quote:'Best garage in town. Clean, professional, and they actually pick up the phone.', quoteBy:'Verified booking \u00b7 Jun 2026', mode:'verified' },
+  ];
+
+  ISSUES = ['Brakes','Engine','Suspension','Electrical','Tyres','Overheating','Aircon','Service / oil'];
+  SLOTS = [ { day:'Today', time:'2:00 PM', note:'1 bay free · soonest' }, { day:'Today', time:'4:30 PM', note:'2 bays free' }, { day:'Tomorrow', time:'9:00 AM', note:'Quietest · in & out fast' }, { day:'Tomorrow', time:'4:30 PM', note:'After work' } ];
+  ZONES = ['Kenyatta Rd, Nyeri','Kimathi Way, Nyeri','Gakere Rd, Nyeri','Ring Rd, Nyeri'];
+
+  ISSUE_MINS = { 'Brakes':120, 'Engine':180, 'Suspension':120, 'Electrical':90, 'Tyres':45, 'Overheating':120, 'Aircon':90, 'Service / oil':45 };
+  SERVICES = [ {key:'oil',label:'Oil & routine service',def:45}, {key:'brakes',label:'Brakes & pads',def:120}, {key:'diag',label:'Diagnostics / warning light',def:60}, {key:'susp',label:'Suspension & steering',def:120}, {key:'elec',label:'Electrical / battery',def:90}, {key:'body',label:'Bodywork & welding',def:480} ];
+  DUR_PRESETS = [30,45,60,90,120,180,480];
+
+  fmtDur(m){ if(m>=480) return 'Drop-off'; if(m<60) return m+' min'; const h=m/60; return (h%1===0? h : h.toFixed(1).replace(/\.0$/,''))+' hr'; }
+  cycleDur(key,def){ const cur=this.state.durations[key]??def; const i=this.DUR_PRESETS.indexOf(cur); const next=this.DUR_PRESETS[(i+1)%this.DUR_PRESETS.length]; this.setState(s=>({durations:{...s.durations,[key]:next}})); }
+
+  waPick(value){ const s=this.state.waStep; if(s===0)this.setState({waStep:1,waSymptom:value}); else if(s===1)this.setState({waStep:2,waDetail:value}); else if(s===2)this.setState({waStep:3,waSlot:value}); else if(s===3)this.setState({waStep:4}); }
+  waReset(){ this.setState({waStep:0,waSymptom:'',waDetail:'',waSlot:'',waOwnerStep:0}); }
+  setWaSide(side){ this.setState({waSide:side}); }
+  waOwnerPick(value){ const s=this.state.waOwnerStep; if(s===0)this.setState({waOwnerStep:1}); else if(s===1)this.setState({waOwnerStep:2}); }
+  buildWAOwner(){
+    const st=this.state, step=st.waOwnerStep, T=this.THEMES[st.tenant], garage=T.short;
+    const m=[{meta:true,text:'TODAY'},{from:'bot',text:'\uD83D\uDD14 New booking request',time:'9:43'},{book:true,name:'Grace W.',car:'Toyota Premio · KCA 123A',chips:['Brakes','Suspension'],summary:'Likely worn front pads + alignment pull. Inspect on arrival, quote a pad set.',slot:'Today · 2:00 PM',deposit:'KSh 500 paid'}];
+    if(step>=1){ m.push({from:'user',text:'\u2705 Confirm',time:'9:43'}); m.push({from:'bot',text:'Asante! Grace is notified her bay is held for 2:00 PM, and we shared your location with her. Reply when the car is ready.',time:'9:43'}); }
+    if(step>=2){ m.push({from:'user',text:'Car is ready \uD83D\uDC4D',time:'2:10'}); m.push({from:'bot',text:'Done \u2705 Grace notified to collect. Her M-Pesa balance request has been sent.',time:'2:10'}); }
+    let replies=[];
+    if(step===0) replies=[{label:'Confirm \u2705',value:'confirm'},{label:'Suggest another time',value:'alt'},{label:'Decline',value:'decline'}];
+    else if(step===1) replies=[{label:'Mark car ready',value:'ready'}];
+    const replyItems=replies.map(r=>({label:r.label,onClick:()=>this.waOwnerPick(r.value),bg:'#fff',fg:'#008069',bd:'#E6E1DA'}));
+    return { msgs:m, replies:replyItems, done: step>=2 };
+  }
+  componentDidUpdate(){ if(this.state.persona==='whatsapp' && this._chat){ this._chat.scrollTop=this._chat.scrollHeight; } }
+
+  buildWA(){
+    const st=this.state, step=st.waStep, T=this.THEMES[st.tenant], garage=T.short;
+    const m=[{meta:true,text:'TODAY'},{from:'bot',text:`Karibu ${garage} \uD83D\uDC4B  Book your car straight in here — no calling around. What\u2019s the problem?`,time:'9:40'}];
+    if(step>=1){ m.push({from:'user',text:st.waSymptom,time:'9:40'}); m.push({from:'bot',text:'Got it \uD83D\uDC4D  Add a photo or voice note if you can — or I\u2019ll jump to available times.',time:'9:40'}); }
+    if(step>=2){ m.push({from:'user',text:st.waDetail,time:'9:41'}); m.push({from:'bot',text:`Asante. That looks like ~a 2-hour job. Next openings at ${garage}:`,time:'9:41'}); }
+    if(step>=3){ m.push({from:'user',text:st.waSlot,time:'9:42'}); m.push({from:'bot',text:'Reserved \u2705  Pay a KSh 500 deposit to hold your bay — it comes off your final bill.',time:'9:42'}); }
+    if(step>=4){ m.push({from:'user',text:'Paid KSh 500 — M-Pesa \u2705',time:'9:43'}); m.push({card:true,title:'Booking confirmed \uD83C\uDF89',line:`${garage} · Today 2:00 PM`,ref:'Ref #AG-4821',sub:'Drive straight in — no queue. We\u2019ll WhatsApp you the moment your car is ready.'}); m.push({note:true,text:`\uD83D\uDCCB  Sent to ${garage}\u2019s WhatsApp too: \u201CBrakes — likely worn front pads, check alignment.\u201D They\u2019re set up before you arrive.`}); }
+    let replies=[], mpesa=false, done=false;
+    if(step===0) replies=[{label:'Brakes \uD83D\uDED1',value:'Brakes'},{label:'Engine / overheating',value:'Engine / overheating'},{label:'Something else',value:'Something else'}];
+    else if(step===1) replies=[{label:'\uD83D\uDCF7 Send a photo',value:'\uD83D\uDCF7 Photo sent'},{label:'\uD83C\uDFA4 Voice note',value:'\uD83C\uDFA4 Voice note · 0:09'},{label:'Skip → see times',value:'Just book me in'}];
+    else if(step===2) replies=[{label:'Today · 2:00 PM',value:'Today · 2:00 PM'},{label:'Today · 4:30 PM',value:'Today · 4:30 PM'},{label:'Tomorrow · 9:00 AM',value:'Tomorrow · 9:00 AM'}];
+    else if(step===3){ replies=[{label:'Pay KSh 500 · M-Pesa',value:'pay'}]; mpesa=true; }
+    else done=true;
+    const replyItems=replies.map(r=>({ label:r.label, onClick:()=>this.waPick(r.value), bg: mpesa?'#00A550':'#fff', fg: mpesa?'#fff':'#008069', bd: mpesa?'#00A550':'#E6E1DA' }));
+    return { msgs:m, replies:replyItems, done };
+  }
+
+  BOOKINGS = [
+    { time:'9:00', ampm:'AM', name:'Grace W.', car:'Toyota Premio · KCA 123A', issues:['Brakes','Suspension'], summary:'Likely worn front pads + alignment pull. Inspect on arrival, quote pad set.', photo:true, base:'new' },
+    { time:'11:30', ampm:'AM', name:'David K.', car:'Subaru Forester · KDJ 456B', issues:['Engine','Overheating'], summary:'Possible coolant leak / thermostat. Pressure-test cooling system first.', photo:false, base:'confirmed' },
+    { time:'2:00', ampm:'PM', name:'Aisha M.', car:'Mazda Demio · KCB 789C', issues:['Service / oil'], summary:'Routine 10,000 km service + oil and filter change.', photo:false, base:'confirmed' },
+    { time:'4:30', ampm:'PM', name:'Peter N.', car:'Nissan Note · KDK 321D', issues:['Electrical'], summary:'Battery not holding charge overnight. Test alternator + battery health.', photo:true, base:'new' },
+  ];
+
+  trackRows(acc){
+    const done=(l,t)=>({label:l,time:t,dot:acc,ring:acc,line:acc,fg:'#0F1A14'});
+    const now=(l,t)=>({label:l,time:t,dot:acc,ring:acc,line:'#DCE5E0',fg:'#0F1A14'});
+    const soon=(l,t)=>({label:l,time:t,dot:'transparent',ring:'#CBD5CF',line:'#DCE5E0',fg:'#9AA6A0'});
+    return [done('Request sent','just now'),done('Garage confirmed','just now'),now('Bay reserved for you','held till 20 min after your slot'),soon('Car received','at your slot'),soon('Ready for pickup','—')];
+  }
+  roadTrack(){
+    const a='#C2410C';
+    return [ {label:'Request received',time:'just now',dot:a,ring:a,line:a,fg:'#0F1A14'},
+      {label:'Samuel M. dispatched',time:'just now',dot:a,ring:a,line:'#EAD9D0',fg:'#0F1A14'},
+      {label:'On the way to you',time:'~12 min',dot:'transparent',ring:'#E0C3B6',line:'#EAD9D0',fg:'#9AA6A0'},
+      {label:'Arrived',time:'—',dot:'transparent',ring:'#E0C3B6',line:'transparent',fg:'#9AA6A0'} ];
+  }
+
+  onPhoto(e){ const files=[...(e.target.files||[])]; files.forEach(f=>{ const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:[...s.photos, r.result]})); r.readAsDataURL(f); }); e.target.value=''; }
+  removePhoto(i){ this.setState(s=>({photos:s.photos.filter((_,idx)=>idx!==i)})); }
+  startRec(){ this.setState({recording:true, recSecs:0}); this._timer=setInterval(()=>this.setState(s=>({recSecs:s.recSecs+1})),1000); }
+  stopRec(){ if(this._timer)clearInterval(this._timer); this.setState(s=>({recording:false, voice:{dur:s.recSecs||3}})); }
+  delVoice(){ this.setState({voice:null}); }
+  fmt(n){ const m=Math.floor(n/60), s=n%60; return m+':'+(s<10?'0':'')+s; }
+
+  async runAI(){
+    if(this.state.aiLoading) return;
+    this.setState({aiLoading:true, aiDone:false});
+    const st=this.state;
+    const sel=st.issues.join(', ')||'not specified';
+    const note=st.note||'(none typed)';
+    const prompt=`A Kenyan driver is booking a car repair. Selected symptoms: ${sel}. Their own words: "${note}". Write a SHORT note FOR THE MECHANIC: the likely cause(s) and what to check first. STRICT: max 2 sentences, plain text only, no markdown, no asterisks, no headings, no preamble.`;
+    let text=null;
+    try { if(window.claude&&window.claude.complete) text=await window.claude.complete(prompt); } catch(e){ text=null; }
+    if(!text) text='Likely front brake-pad wear with a possible wheel-alignment pull. Check front pads and discs, and test alignment on arrival.';
+    const clean=String(text).replace(/\*+/g,'').replace(/^#+\s*/gm,'').replace(/\s+/g,' ').trim();
+    this.setState({aiLoading:false, aiDone:true, aiText:clean});
+  }
+
+  onMapTap(e){
+    const r=e.currentTarget.getBoundingClientRect();
+    const x=Math.max(6,Math.min(94,((e.clientX-r.left)/r.width)*100));
+    const y=Math.max(8,Math.min(92,((e.clientY-r.top)/r.height)*100));
+    const zone=this.ZONES[Math.min(3,Math.floor(y/25))];
+    this.setState({pin:{x,y}, town:'', located:true, locPerm:false});
+  }
+  allowLoc(){ this.setState({pin:{x:50,y:46}, town:'', located:true, locPerm:false}); }
+  onTown(e){ this.setState({town:e.target.value}); }
+
+  setStatus(i){ this.setState(s=>({ bookingStatuses:{...s.bookingStatuses, [i]:'confirmed'} })); }
+  toggleBlock(i){ this.setState(s=>({ blocked:{...s.blocked, [i]: !s.blocked[i]} })); }
+  copyLink(){ try{ navigator.clipboard && navigator.clipboard.writeText(this.THEMES[this.state.tenant].domain); }catch(e){} this.setState({copied:true}); setTimeout(()=>this.setState({copied:false}),1500); }
+
+  renderVals(){
+    const st=this.state;
+    const T=this.THEMES[st.tenant];
+    const wl=st.tenant!=='autocheck';
+    const driver=st.persona==='driver';
+    const owner=st.persona==='owner';
+    const isWA=st.persona==='whatsapp';
+    const waOwner=st.waSide==='owner';
+    const wa= waOwner ? this.buildWAOwner() : this.buildWA();
+    const waMsgs=wa.msgs.map(x=>({ ...x, isMeta:!!x.meta, isBot:x.from==='bot', isUser:x.from==='user', isCard:!!x.card, isNote:!!x.note, isBook:!!x.book, justify: x.from==='user'?'flex-end':((x.meta||x.note||x.card||x.book)?'center':'flex-start') }));
+
+    const tenants=Object.keys(this.THEMES).map(key=>{ const th=this.THEMES[key]; const active=st.tenant===key; return { key, label:th.label, sub:th.sub, mark:th.mark, accent:th.accent, onClick:()=>this.setTenant(key), bg:active?th.accentSoft:'#fff', bd:active?th.accent:'#E2E8E5', fg:active?th.accentDark:'#0F1A14', subfg:active?th.accentDark:'#7B857F' }; });
+
+    const decorate=(g)=>({ ...g, hasAvatars:(g.avatars&&g.avatars.length>0), isVisits:g.trustType==='visits', isVerifiedMode:g.mode==='verified', isCircleMode:g.mode!=='verified' });
+    const garages=this.GARAGES.map((g,i)=>({ ...decorate(g), onClick:()=>this.patch({away:null,g:i,s:1}) }));
+    const nyeri=this.NYERI.map((g)=>({ ...decorate(g), onClick:()=>this.patch({away:g,s:1}) }));
+    const g=decorate(st.away||this.GARAGES[st.g]);
+
+    const issues=this.ISSUES.map(name=>{ const active=st.issues.includes(name); return { name, onClick:()=>this.toggleIssue(name), bg:active?T.accent:'#F2F5F3', bd:active?T.accent:'#D7DEDA', fg:active?'#fff':'#33403A' }; });
+    const slots=this.SLOTS.map((sl,i)=>{ const sel=st.slot===i; return { ...sl, onClick:()=>this.patch({slot:i}), bg:sel?T.accentSoft:'#fff', bd:sel?T.accent:'#E2E8E5', fg:sel?T.accentDark:'#0F1A14' }; });
+    const slotLabel=st.slot!=null?(this.SLOTS[st.slot].day+' · '+this.SLOTS[st.slot].time):'';
+    const canConfirm=st.slot!=null;
+
+    const photoItems=st.photos.map((url,i)=>({ url, bg:'url("'+url+'")', onRemove:()=>this.removePhoto(i) }));
+
+    // duration estimate from described issues
+    const selMins = st.issues.reduce((a,n)=>a+(this.ISSUE_MINS[n]||60),0);
+    const estMins = st.issues.length ? selMins : 45;
+    const durLow = estMins, durHigh = Math.ceil(estMins*1.4/30)*30;
+    const durWindow = estMins<=45 ? '\u2248 30\u201345 min' : ('\u2248 '+this.fmtDur(durLow)+'\u2013'+this.fmtDur(durHigh));
+    const waitAllowed = estMins<=60;
+    const fulfil = st.fulfil || (waitAllowed?'wait':'drop');
+    const waitSel = fulfil==='wait' && waitAllowed, dropSel = fulfil==='drop';
+
+    const ownerServices = this.SERVICES.map(s=>{ const cur=st.durations[s.key]??s.def; return { label:s.label, dur:this.fmtDur(cur), onClick:()=>this.cycleDur(s.key,s.def) }; });
+
+    const roadDefs=[ {key:'wont-start',emoji:'🔋',label:"Won't start"}, {key:'flat',emoji:'🛞',label:'Flat tyre'}, {key:'overheat',emoji:'🌡️',label:'Overheating / smoke'}, {key:'accident',emoji:'⚠️',label:'Accident'} ];
+    const roadOpts=roadDefs.map(o=>{ const sel=st.roadType===o.key; return { ...o, onClick:()=>this.patch({roadType:o.key}), sel, bg:sel?T.accentSoft:'#fff', bd:sel?T.accent:'#E2E8E5', fg:sel?T.accentDark:'#0F1A14', iconbg:sel?'#fff':'#F2F5F3' }; });
+
+    const pinArea = st.town && st.town.trim() ? st.town.trim() : this.ZONES[Math.min(3,Math.floor(st.pin.y/25))];
+
+    // owner derived
+    const statusOf=(i)=>this.BOOKINGS[i].base==='new' ? (st.bookingStatuses[i]||'new') : this.BOOKINGS[i].base;
+    const bookings=this.BOOKINGS.map((b,i)=>{ const status=statusOf(i); const isNew=status==='new';
+      const pill = status==='new'?{t:'NEW',bg:'#FBEAE1',fg:'#C2410C',bar:'#C2410C'} : status==='confirmed'?{t:'CONFIRMED',bg:T.accentSoft,fg:T.accentDark,bar:T.accent} : {t:'IN BAY',bg:'#FEF3D6',fg:'#9A6608',bar:'#E0A210'};
+      return { ...b, status:pill.t, pillBg:pill.bg, pillFg:pill.fg, bar:pill.bar, isNew, confirm:()=>this.setStatus(i) }; });
+    const newCount=this.BOOKINGS.filter((b,i)=>statusOf(i)==='new').length;
+    const baysUsed=Math.min(st.baysTotal, this.BOOKINGS.length-1);
+
+    const ownerSlotDefs=['8:00','9:00','11:30','1:00','2:00','4:30'];
+    const bookedTimes={'9:00':1,'11:30':1,'2:00':1,'4:30':1};
+    const ownerSlots=ownerSlotDefs.map((t,i)=>{ const booked=!!bookedTimes[t]; const blk=!!st.blocked[i];
+      let bg='#fff',bd='#E2E8E5',fg='#0F1A14',tag='Free',tagfg='#0E9E64';
+      if(booked){ bg=T.accentSoft; bd=T.accent; fg=T.accentDark; tag='Booked'; tagfg=T.accentDark; }
+      else if(blk){ bg='#F2F2F0'; bd='#D7DBD8'; fg='#9AA6A0'; tag='Blocked'; tagfg='#9AA6A0'; }
+      return { time:t, bg, bd, fg, tag, tagfg, onClick: booked?(()=>{}):(()=>this.toggleBlock(i)) }; });
+
+    return {
+      accent:T.accent, accentDark:T.accentDark, accentSoft:T.accentSoft,
+      tenants,
+      setDriver:()=>this.setPersona('driver'), setOwner:()=>this.setPersona('owner'), setWhatsApp:()=>this.setPersona('whatsapp'),
+      driverTabBg: driver?'#fff':'transparent', driverTabFg: driver?'#0F1A14':'#7B857F', driverTabSh: driver?'0 1px 3px rgba(0,0,0,.1)':'none',
+      whatsappTabBg: isWA?'#fff':'transparent', whatsappTabFg: isWA?'#0F1A14':'#7B857F', whatsappTabSh: isWA?'0 1px 3px rgba(0,0,0,.1)':'none',
+      ownerTabBg: owner?'#fff':'transparent', ownerTabFg: owner?'#0F1A14':'#7B857F', ownerTabSh: owner?'0 1px 3px rgba(0,0,0,.1)':'none',
+      isWhatsApp: isWA, statusColor: isWA?'#fff':'#0F1A14',
+      waMsgs, waReplies: wa.replies, waHasReplies: wa.replies.length>0, waDone: wa.done, waReset:()=>this.waReset(),
+      chatRef:(el)=>{ this._chat=el; },
+      waName: waOwner?'AutoCheck Bookings':T.short, waSub: waOwner?'notifications · online':'business account · online',
+      waMark: waOwner?'A':T.mark, waAvatarBg: waOwner?'#0E7C50':'var(--ac)',
+      setSideDriver:()=>this.setWaSide('driver'), setSideOwner:()=>this.setWaSide('owner'),
+      waDrvBg: waOwner?'transparent':'#008069', waDrvFg: waOwner?'#54656F':'#fff',
+      waOwnBg: waOwner?'#008069':'transparent', waOwnFg: waOwner?'#fff':'#54656F',
+      brandName:T.name, brandShort:T.short, brandMark:T.mark, brandDomain:T.domain,
+
+      isConsumerHome: driver && st.s===0 && !wl,
+      isBrandHome: driver && st.s===0 && wl,
+      isDetail: driver && st.s===1,
+      isIssue: driver && st.s===2,
+      isSlot: driver && st.s===3,
+      isDone: driver && st.s===4,
+      isDiscovery: driver && st.s===5,
+      isLocation: driver && st.s===6,
+      isRoadside: driver && st.s===7,
+      isRoadDone: driver && st.s===8,
+      isOwner: owner,
+
+      detailKicker: st.away?'Verified · '+pinArea.split(',').pop().trim():(wl?T.short:'Your garage'),
+      garages, nyeri, g,
+      issues,
+      note:st.note, onNote:e=>this.patch({note:e.target.value}),
+      runAI:()=>this.runAI(), aiDone:st.aiDone, aiLoading:st.aiLoading, aiText:st.aiText,
+      aiIdleIcon: !st.aiLoading, aiBtnTitle: st.aiLoading?'Thinking…':(st.aiDone?'Re-generate':'Help me describe it'),
+      onPhoto:e=>this.onPhoto(e), photoItems, hasPhotos:st.photos.length>0,
+      voiceIdle: !st.recording && !st.voice, recording:st.recording, recTime:this.fmt(st.recSecs),
+      hasVoice: !!st.voice, voiceTime: st.voice?this.fmt(st.voice.dur):'0:00',
+      startRec:()=>this.startRec(), stopRec:()=>this.stopRec(), delVoice:()=>this.delVoice(),
+      slots, slotLabel,
+      durWindow, waitAllowed, waitNoteShow: !waitAllowed,
+      waitNote: 'This looks like a longer job — best to leave the car and we\u2019ll call you when it\u2019s ready.',
+      setWait: ()=> waitAllowed && this.patch({fulfil:'wait'}), setDrop: ()=>this.patch({fulfil:'drop'}),
+      waitPillBg: waitSel?T.accent:(waitAllowed?'#fff':'#F2F2F0'), waitPillFg: waitSel?'#fff':(waitAllowed?'#33403A':'#B0B7B3'), waitPillBd: waitSel?T.accent:'#E2E8E5',
+      dropPillBg: dropSel?T.accent:'#fff', dropPillFg: dropSel?'#fff':'#33403A', dropPillBd: dropSel?T.accent:'#E2E8E5',
+      cta1: canConfirm?'Hold my bay · pay deposit':'Pick a slot to continue',
+      cta1bg: canConfirm?T.accent:'#D8DEDB', cta1fg: canConfirm?'#fff':'#9AA6A0',
+      track:this.trackRows(T.accent), doneBack: wl?'Done':'Back to your garages',
+
+      // location
+      locPerm:st.locPerm, pinX:st.pin.x+'%', pinY:st.pin.y+'%', pinArea, town:st.town,
+      onMapTap:e=>this.onMapTap(e), allowLoc:()=>this.allowLoc(), onTown:e=>this.onTown(e),
+      confirmLocation:()=>this.patch({s:5}),
+
+      // roadside
+      roadOpts, roadTrack:this.roadTrack(),
+      toRoadside:()=>this.patch({s:7}), requestRoad:()=>this.patch({s:8}),
+
+      // owner
+      ownerBookings: st.ownerTab==='bookings', ownerHours: st.ownerTab==='hours', ownerSettings: st.ownerTab==='settings',
+      tabBookings:()=>this.patch({ownerTab:'bookings'}), tabHours:()=>this.patch({ownerTab:'hours'}), tabSettings:()=>this.patch({ownerTab:'settings'}),
+      tabBookingsCol: st.ownerTab==='bookings'?T.accent:'#9AA6A0', tabHoursCol: st.ownerTab==='hours'?T.accent:'#9AA6A0', tabSettingsCol: st.ownerTab==='settings'?T.accent:'#9AA6A0',
+      bookings, todayCount:this.BOOKINGS.length, newCount, baysUsed, baysTotal:st.baysTotal,
+      acceptingLabel: st.accepting?'Open for bookings':'Paused',
+      toggleAccepting:()=>this.patch({accepting:!st.accepting}),
+      acceptingBg: st.accepting?T.accent:'#CBD5CF', acceptingX: st.accepting?'23px':'3px',
+      baysUp:()=>this.patch({baysTotal:Math.min(12,st.baysTotal+1)}), baysDown:()=>this.patch({baysTotal:Math.max(1,st.baysTotal-1)}),
+      ownerSlots, ownerServices,
+      copyLink:()=>this.copyLink(), copyLabel: st.copied?'Copied!':'Copy',
+      planName:T.plan, planPrice:T.price, planFeatures:T.feats,
+
+      // nav
+      toDiscovery:()=>this.patch({s:6}), toLocation:()=>this.patch({s:6}), toHome:()=>this.patch({s:0,away:null}),
+      back:()=>{ const s=st.s; if(s===1)this.patch({s: st.away?5:0}); else if(s===5)this.patch({s:6}); else if(s===6)this.patch({s:0}); else if(s===7)this.patch({s:5}); else this.patch({s:Math.max(0,s-1)}); },
+      toIssue:()=>this.patch({s:2}), toSlot:()=>this.patch({s:3}),
+      confirm:()=> canConfirm && this.patch({s:4}),
+      reset:()=>this.patch({s:0,away:null,issues:[],slot:null,note:'',aiDone:false,aiText:'',photos:[],voice:null}),
+    };
+  }
+}
+</script>
+</body>
+</html>
