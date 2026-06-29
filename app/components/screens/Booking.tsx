@@ -289,7 +289,23 @@ export function Slot({ vm }: { vm: VM }) {
       </div>
 
       <div style={bottomCta}>
-        <div onClick={vm.confirm} style={{ background: vm.cta1bg, color: vm.cta1fg, borderRadius: 14, padding: 16, textAlign: 'center', font: "700 15px 'Manrope'", cursor: 'pointer' }}>
+        {vm.needSignIn && (
+          <a
+            href="/login"
+            style={{ display: 'block', textDecoration: 'none', background: '#FBEAE1', border: '1px solid #F2D2C2', color: '#9A330A', borderRadius: 11, padding: '10px 12px', marginBottom: 9, font: "600 12.5px 'Manrope'", lineHeight: 1.4 }}
+          >
+            Sign in to hold your bay — tap to continue with your phone number, then come back.
+          </a>
+        )}
+        {vm.bookingError && (
+          <div style={{ background: '#FBEAE1', border: '1px solid #F2D2C2', color: '#9A330A', borderRadius: 11, padding: '10px 12px', marginBottom: 9, font: "600 12.5px 'Manrope'", lineHeight: 1.4 }}>
+            {vm.bookingError}
+          </div>
+        )}
+        <div
+          onClick={vm.submitBooking}
+          style={{ background: vm.cta1bg, color: vm.cta1fg, borderRadius: 14, padding: 16, textAlign: 'center', font: "700 15px 'Manrope'", cursor: vm.submitting ? 'default' : 'pointer', opacity: vm.submitting ? 0.85 : 1 }}
+        >
           {vm.cta1}
         </div>
       </div>
@@ -308,6 +324,11 @@ export function Done({ vm }: { vm: VM }) {
         </div>
         <div style={{ font: "800 23px 'Archivo'" }}>Your bay is reserved</div>
         <div style={{ font: "400 13px 'Manrope'", color: '#7B857F', marginTop: 4 }}>{vm.g.name} · {vm.slotLabel}</div>
+        {vm.bookingRef && (
+          <div style={{ display: 'inline-block', marginTop: 8, font: "700 12px 'Space Mono'", color: 'var(--acd)', background: 'var(--acs)', borderRadius: 999, padding: '4px 12px' }}>
+            Ref #{vm.bookingRef}
+          </div>
+        )}
       </div>
       <div style={{ background: 'var(--acs)', borderRadius: 14, padding: '13px 15px', marginTop: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }}>
