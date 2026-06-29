@@ -1,6 +1,26 @@
 import type { VM } from '@/lib/state'
 import { ChevronRight, ShieldCheck } from '@/components/icons'
 
+// "Book on WhatsApp" click-to-chat button. Opens the driver's WhatsApp with the
+// garage chat prefilled (see lib/wa-link.ts). stopPropagation so tapping it
+// inside a garage card doesn't also trigger the card's tap-into-funnel.
+function WaButton({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#25D366', color: '#fff', borderRadius: 12, padding: '12px 14px', textDecoration: 'none', font: "700 14px 'Manrope'" }}
+    >
+      <svg width="18" height="18" viewBox="0 0 32 32" fill="#fff" aria-hidden="true">
+        <path d="M16 3C9 3 3.5 8.5 3.5 15.5c0 2.4.7 4.7 1.9 6.7L3 29l7-1.8c1.9 1 4 1.6 6 1.6 7 0 12.5-5.5 12.5-12.5S23 3 16 3zm0 22.7c-1.9 0-3.7-.5-5.3-1.5l-.4-.2-3.9 1 1-3.8-.2-.4a10.2 10.2 0 01-1.6-5.6C5.6 9.8 10.2 5.3 16 5.3S26.4 9.8 26.4 15.6 21.8 25.7 16 25.7zm5.7-7.7c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-1.8-.9-3-1.6-4.2-3.6-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.2 3.4 5.3 4.7 2 .8 2.7.9 3.7.8.6-.1 1.8-.8 2.1-1.5.3-.7.3-1.4.2-1.5-.1-.2-.3-.2-.6-.4z" />
+      </svg>
+      Book on WhatsApp
+    </a>
+  )
+}
+
 export function ConsumerHome({ vm }: { vm: VM }) {
   return (
     <div
@@ -92,6 +112,11 @@ export function ConsumerHome({ vm }: { vm: VM }) {
               </span>
               <span style={{ font: "700 13px 'Manrope'", color: '#0F1A14' }}>{g.next}</span>
             </div>
+            {g.wa.available && (
+              <div style={{ marginTop: 11 }}>
+                <WaButton href={g.wa.href} />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -180,6 +205,11 @@ export function BrandHome({ vm }: { vm: VM }) {
         <div onClick={vm.toIssue} style={{ background: 'var(--ac)', color: '#fff', borderRadius: 14, padding: 16, textAlign: 'center', font: "700 15px 'Manrope'", cursor: 'pointer', boxShadow: '0 8px 18px rgba(0,0,0,.14)' }}>
           Book your car in →
         </div>
+        {vm.wa.available && (
+          <div style={{ marginTop: 10 }}>
+            <WaButton href={vm.wa.href} />
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, opacity: 0.6 }}>

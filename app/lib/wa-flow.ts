@@ -3,8 +3,8 @@
 // This is intentionally a STRUCTURED booking flow — a fixed state machine driven
 // by interactive reply buttons — not a general-purpose "responds like you"
 // assistant. That is a deliberate product + policy choice:
-//   • Product: our value is reserving a real bay (capacity, slot, deposit,
-//     structured technician brief), not open-ended chat. A garage in a
+//   • Product: our value is reserving a real bay (capacity, slot, structured
+//     technician brief), not open-ended chat. A garage in a
 //     referral / trust-sensitive market is booking *with Juma*, not talking to
 //     an AI wearing Juma's name.
 //   • Policy: WhatsApp's Jan-2026 AI rules disallow general-purpose assistants
@@ -138,27 +138,14 @@ export function advance(conv: WaConversation, buttonId: string | null, text: str
           { id: 'slot_3', title: 'Tomorrow · 9:00 AM' },
         ])
       }
-      return {
-        conversation: { ...conv, step: 'deposit', slot },
-        outbound: {
-          body: 'Reserved ✅ Pay a KSh 500 deposit to hold your bay — it comes off your final bill.',
-          buttons: [{ id: 'pay', title: 'Pay KSh 500 · M-Pesa' }],
-        },
-      }
-    }
-
-    case 'deposit': {
-      if (buttonId !== 'pay') {
-        return reprompt('Pay the deposit to hold your bay:', [
-          { id: 'pay', title: 'Pay KSh 500 · M-Pesa' },
-        ])
-      }
+      // No deposit — the driver and garage already know each other, so picking a
+      // slot confirms the booking outright. (M-Pesa can come back as a later step.)
       const sym = conv.symptom || 'Issue described'
       return {
-        conversation: { ...conv, step: 'done' },
+        conversation: { ...conv, step: 'done', slot },
         outbound: {
-          body: `Booking confirmed 🎉\n${g} · ${conv.slot}\nRef #AG-4821\n\nDrive straight in — no queue. We'll WhatsApp you the moment your car is ready.`,
-          garageBrief: `📋 New booking — ${sym}. Likely worn front pads, check alignment. Bay held: ${conv.slot}. KSh 500 deposit paid.`,
+          body: `Booking confirmed 🎉\n${g} · ${slot}\nRef #AG-4821\n\nDrive straight in — no queue, no deposit. We'll WhatsApp you the moment your car is ready.`,
+          garageBrief: `📋 New booking — ${sym}. Bay held: ${slot}.`,
           terminal: true,
         },
       }

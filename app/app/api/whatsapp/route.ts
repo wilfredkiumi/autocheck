@@ -7,7 +7,7 @@ import { persistWaBooking } from '@/lib/db/wa-booking'
 //
 // GET  — Meta's subscription verification handshake.
 // POST — inbound messages. We run a fixed booking state machine (lib/wa-flow):
-//        symptom → media → slot → deposit → confirmed. It is deliberately not a
+//        symptom → media → slot → confirmed. It is deliberately not a
 //        general-purpose assistant; off-script messages re-prompt the current
 //        step. On completion the structured brief is delivered to the fundi.
 //        Sends no-op without WHATSAPP_* credentials, so it runs anywhere.

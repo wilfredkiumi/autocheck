@@ -24,6 +24,7 @@ export interface Avatar {
 
 export interface Garage {
   id?: string // DB uuid when sourced from Supabase; undefined for static demo data
+  tenantKey?: TenantKey // which tenant this garage belongs to (for WhatsApp routing)
   name: string
   area: string
   dist: string
@@ -116,6 +117,7 @@ export const THEMES: Record<TenantKey, Theme> = {
 
 export const GARAGES: Garage[] = [
   {
+    tenantKey: 'juma',
     name: 'Juma Auto Garage',
     area: 'Ngong Rd',
     dist: '1.2 km',
@@ -136,6 +138,7 @@ export const GARAGES: Garage[] = [
     mode: 'circle',
   },
   {
+    tenantKey: 'autocheck',
     name: 'Karanja Motors',
     area: 'Industrial Area',
     dist: '3.4 km',
@@ -155,6 +158,7 @@ export const GARAGES: Garage[] = [
     mode: 'circle',
   },
   {
+    tenantKey: 'westgate',
     name: 'Westgate Auto Clinic',
     area: 'Westlands',
     dist: '2.1 km',
@@ -180,6 +184,7 @@ export const GARAGES: Garage[] = [
 
 export const NYERI: Garage[] = [
   {
+    tenantKey: 'autocheck',
     name: 'Mt Kenya Auto Repairs',
     area: 'Kimathi Way, Nyeri',
     dist: '0.6 km',
@@ -197,6 +202,7 @@ export const NYERI: Garage[] = [
     mode: 'verified',
   },
   {
+    tenantKey: 'autocheck',
     name: 'Dedan Motors',
     area: 'Gakere Rd, Nyeri',
     dist: '1.4 km',
@@ -213,6 +219,7 @@ export const NYERI: Garage[] = [
     mode: 'verified',
   },
   {
+    tenantKey: 'autocheck',
     name: 'Highlands Garage',
     area: 'Ring Rd, Nyeri',
     dist: '2.2 km',
