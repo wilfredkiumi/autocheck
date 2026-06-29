@@ -1,0 +1,83 @@
+/* Global styles — ported from the design prototype's <helmet> block. */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #e9edeb;
+  font-family: 'Manrope', sans-serif;
+}
+
+@keyframes scrIn {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+@keyframes recpulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@keyframes wave {
+  0%,
+  100% {
+    height: 6px;
+  }
+  50% {
+    height: 18px;
+  }
+}
+
+.scr {
+  animation: scrIn 0.32s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+.pdot {
+  animation: pulse 1.7s ease-in-out infinite;
+}
+.phscroll::-webkit-scrollbar {
+  display: none;
+}
+.phscroll {
+  scrollbar-width: none;
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+input,
+textarea {
+  font-family: 'Manrope', sans-serif;
+}
