@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { createBookingAction } from '@/lib/actions/booking'
+import { resolveWaTarget } from './wa-link'
 import {
   BOOKINGS,
   DUR_PRESETS,
@@ -556,10 +557,12 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
   const garages = GARAGES.map((g, i) => ({
     ...decorate(g),
     onClick: () => patch({ away: null, g: i, s: 1 }),
+    wa: resolveWaTarget(g.tenantKey ?? st.tenant),
   }))
   const nyeri = NYERI.map((g) => ({
     ...decorate(g),
     onClick: () => patch({ away: g, s: 1 }),
+    wa: resolveWaTarget(g.tenantKey ?? st.tenant),
   }))
   const g = decorate(st.away || GARAGES[st.g])
 
@@ -802,8 +805,9 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     cta1: st.submitting
       ? 'Holding your bay…'
       : canConfirm
-        ? 'Hold my bay · pay deposit'
+        ? 'Hold my bay'
         : 'Pick a slot to continue',
+    wa: resolveWaTarget(st.tenant),
     cta1bg: canConfirm ? T.accent : '#D8DEDB',
     cta1fg: canConfirm ? '#fff' : '#9AA6A0',
     submitBooking: () => submitBooking(),

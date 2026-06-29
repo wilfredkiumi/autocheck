@@ -284,7 +284,7 @@ export function Slot({ vm }: { vm: VM }) {
           <span style={{ font: "800 18px 'Archivo'", color: 'var(--ac)' }}>KSh 2,000–3,500</span>
         </div>
         <div style={{ font: "400 11px 'Manrope'", color: '#7B857F', marginTop: 8 }}>
-          Pay a small deposit via M-Pesa to hold the bay. Balance after you approve the written quote.
+          No deposit to book — pay at the garage after you approve the written quote.
         </div>
       </div>
 

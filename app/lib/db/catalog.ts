@@ -37,15 +37,20 @@ export async function loadAppData(): Promise<AppData> {
     if (!tenants.length || !garages.length) return STATIC_APP_DATA
 
     // THEMES must keep all three TenantKey entries; start from the static set and
-    // override with whatever the database supplies.
+    // override with whatever the database supplies. Also build a tenant-id →
+    // TenantKey map so each garage knows its tenant (for WhatsApp routing).
     const THEMES: Record<TenantKey, Theme> = { ...STATIC_APP_DATA.THEMES }
+    const idToKey: Record<string, TenantKey> = {}
     for (const t of tenants) {
       const key = TENANT_SLUGS[t.slug]
-      if (key) THEMES[key] = mapTheme(t)
+      if (key) {
+        THEMES[key] = mapTheme(t)
+        idToKey[t.id] = key
+      }
     }
 
-    const GARAGES = garages.filter((g) => g.mode === 'circle').map(mapGarage)
-    const NYERI = garages.filter((g) => g.mode === 'verified').map(mapGarage)
+    const GARAGES = garages.filter((g) => g.mode === 'circle').map((g) => mapGarage(g, idToKey))
+    const NYERI = garages.filter((g) => g.mode === 'verified').map((g) => mapGarage(g, idToKey))
     const ISSUES = dedupe(issues.map((i) => i.label))
     const SERVICES = dedupeBy(
       services.map((s) => ({ key: s.key, label: s.label, def: s.est_mins })),
@@ -81,10 +86,11 @@ function mapTheme(t: Tenant): Theme {
   }
 }
 
-function mapGarage(g: DbGarage): DemoGarage {
+function mapGarage(g: DbGarage, idToKey: Record<string, TenantKey>): DemoGarage {
   const d = g.details ?? {}
   return {
     id: g.id,
+    tenantKey: idToKey[g.tenant_id],
     name: g.name,
     area: g.area,
     dist: d.dist ?? '',
