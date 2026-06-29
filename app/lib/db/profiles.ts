@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import type { Profile, Tenant } from '@/lib/supabase/types'
 
 export interface SessionContext {
@@ -11,6 +12,7 @@ export interface SessionContext {
 // The signed-in user's profile (with role/tenant) plus their tenant branding,
 // or null when there's no session. Server-side only; used by gated layouts.
 export async function getSessionContext(): Promise<SessionContext | null> {
+  if (!isSupabaseConfigured) return null
   const supabase = await createClient()
   const {
     data: { user },

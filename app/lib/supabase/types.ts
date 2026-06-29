@@ -33,10 +33,26 @@ export type Tenant = {
   accent_soft: string
   domain: string
   plan: TenantPlan
+  plan_label: string | null
   price: string | null
+  sub: string | null
   features: string[]
   is_verified: boolean
   created_at: string
+}
+
+// Presentation-only trust decoration for a garage card (see 0003 migration).
+export type GarageDetails = {
+  dist?: string
+  next?: string
+  trustType?: 'visits' | 'referral' | 'circle'
+  trust?: string
+  avatars?: { i: string; c: string }[]
+  circleAvatars?: { i: string; c: string }[]
+  circleText?: string
+  visits?: string
+  open?: string
+  avail?: string
 }
 
 export type Profile = {
@@ -62,6 +78,8 @@ export type Garage = {
   is_accepting: boolean
   quote: string | null
   quote_by: string | null
+  sort: number
+  details: GarageDetails
   created_at: string
 }
 

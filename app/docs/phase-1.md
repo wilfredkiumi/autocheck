@@ -34,20 +34,33 @@ switches to the live Postgres backend and enables sign-in.
   hitting `/dashboard` or `/admin` go to `/login`; signed-in users land on their
   role's home (`lib/auth/roles.ts`). A no-op when Supabase is absent.
 
-### 4. Data-access layer (`lib/db/`) + a live vertical slice
+### 4. Data-access layer (`lib/db/`)
 - `profiles.ts`, `bookings.ts`, `tenants.ts` — typed queries that rely on RLS for
   scoping.
-- `app/dashboard` — the owner/staff dashboard reads **live bookings** through RLS
-  as the proof-of-pattern. `app/admin` lists tenants/garages and lets an admin
-  verify garages. These are the template for converting the remaining screens.
+- `catalog.ts` — `loadAppData()` returns the driver-facing catalog (tenants,
+  garages, issues, services) from Supabase via a cookie-less anon client (public
+  RLS reads), falling back to the static demo bundle when Supabase is absent or a
+  query fails. This is injected into `useBooking(initialTenant, data)`, so **the
+  whole driver booking flow now renders from Postgres** when configured — the
+  screens themselves are unchanged.
+- `app/dashboard` — owner/staff dashboard reads **live bookings** through RLS.
+  `app/admin` lists tenants/garages and lets an admin verify garages.
+
+### 5. Presentation fields (migration `0003`)
+The driver cards carry trust decoration (contact avatars, "people in your
+network" copy, distance, next-slot label). Migration `0003` adds `tenants.sub`,
+`tenants.plan_label`, `garages.sort`, and `garages.details` (jsonb) so the live
+app reproduces the demo screens exactly; `seed.sql` populates them.
 
 ## What's intentionally deferred
 
-- **Swapping every demo screen to live data.** The driver booking funnel and the
-  owner screens inside `AppShell` still run on `lib/data.ts` in-memory state.
-  Converting them screen-by-screen to the `lib/db` layer is the next slice — kept
-  separate so the working demo isn't destabilised in one big rewrite. The
-  dashboard/admin routes show the pattern to follow.
+- **The owner sample bookings inside the demo `AppShell`** stay static on
+  purpose: that view is the public multi-persona showcase with no session, so it
+  can't read tenant-scoped bookings under RLS. The genuine owner experience —
+  live bookings — is the authenticated `/dashboard`.
+- **Booking writes from the driver flow** (creating a booking, deposits) — the
+  funnel reads from Postgres but still completes in-memory. Wiring the insert is
+  the next slice.
 - **Phase 2 integrations** — real M-Pesa deposits, live WhatsApp sends, and the
   server-side Claude "describe my issue" call. These layer on top of this
   foundation.

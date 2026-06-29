@@ -30,6 +30,17 @@ export async function createClient() {
   })
 }
 
+// Anonymous client — no cookies, no session. For public reads (the garage
+// catalog) that RLS exposes to everyone. Keeps the booking pages free of the
+// dynamic `cookies()` call so they can still render statically.
+export function createAnonClient() {
+  const { createClient: createSupabaseClient } =
+    require('@supabase/supabase-js') as typeof import('@supabase/supabase-js')
+  return createSupabaseClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
+
 // Service-role client — bypasses RLS. SERVER-ONLY, never expose the key to the
 // browser. Used by trusted server paths such as the WhatsApp webhook, which
 // writes bookings on behalf of users who have no app session.

@@ -2,15 +2,21 @@
 
 import type { CSSProperties } from 'react'
 import { useBooking } from '@/lib/state'
-import type { TenantKey } from '@/lib/data'
+import type { AppData, TenantKey } from '@/lib/data'
 import { ConsumerHome, BrandHome } from '@/components/screens/Home'
 import { Detail, Issue, Slot, Done } from '@/components/screens/Booking'
 import { Location, Discovery, Roadside, RoadDone } from '@/components/screens/Away'
 import { WhatsApp } from '@/components/screens/WhatsApp'
 import { Owner } from '@/components/screens/Owner'
 
-export default function App({ initialTenant }: { initialTenant?: TenantKey }) {
-  const vm = useBooking(initialTenant)
+export default function App({
+  initialTenant,
+  data,
+}: {
+  initialTenant?: TenantKey
+  data?: AppData
+}) {
+  const vm = useBooking(initialTenant, data)
 
   // CSS custom properties driving the per-tenant accent theme.
   const themeVars = {

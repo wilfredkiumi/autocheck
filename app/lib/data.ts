@@ -326,6 +326,21 @@ export const BOOKINGS: BookingDef[] = [
   },
 ]
 
+// Injectable data bundle --------------------------------------------------
+// The dynamic, tenant-scoped content the booking screens render. In the demo
+// these are the static arrays above; with Supabase configured, the server
+// loader (lib/db/catalog.ts) supplies the same shapes from Postgres. Everything
+// else (SLOTS, ZONES, ISSUE_MINS, DUR_PRESETS, the sample BOOKINGS) stays static.
+export interface AppData {
+  THEMES: Record<TenantKey, Theme>
+  GARAGES: Garage[]
+  NYERI: Garage[]
+  ISSUES: string[]
+  SERVICES: ServiceDef[]
+}
+
+export const STATIC_APP_DATA: AppData = { THEMES, GARAGES, NYERI, ISSUES, SERVICES }
+
 // Duration helpers --------------------------------------------------------
 export function fmtDur(m: number): string {
   if (m >= 480) return 'Drop-off'

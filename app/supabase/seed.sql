@@ -8,21 +8,22 @@
 -- ---------------------------------------------------------------------------
 -- Tenants
 -- ---------------------------------------------------------------------------
-insert into tenants (id, slug, name, short_name, mark, accent, accent_dark, accent_soft, domain, plan, price, features, is_verified)
+insert into tenants (id, slug, name, short_name, mark, accent, accent_dark, accent_soft, domain, plan, plan_label, price, sub, features, is_verified)
 values
   ('11111111-1111-1111-1111-111111111111', 'autocheck', 'AutoCheck', 'AutoCheck', 'A',
-   '#0E7C50', '#0A6A44', '#EAF3EE', 'autocheck.app', 'standard', 'KSh 2,500/mo',
+   '#0E7C50', '#0A6A44', '#EAF3EE', 'autocheck.app', 'standard', 'Standard', 'KSh 2,500/mo', 'Consumer app',
    array['AutoCheck sub-domain link', 'Bay & slot management', 'Issue intake + photos'], true),
   ('22222222-2222-2222-2222-222222222222', 'juma-auto', 'Juma Auto Garage', 'Juma Auto', 'J',
-   '#C2410C', '#9A330A', '#FBEAE1', 'juma-auto.autocheck.app', 'branded', 'KSh 4,500/mo',
+   '#C2410C', '#9A330A', '#FBEAE1', 'juma-auto.autocheck.app', 'branded', 'Branded', 'KSh 4,500/mo', 'White-label tenant',
    array['Your logo & colours', 'Branded sub-domain', 'Bay & slot management'], false),
   ('33333333-3333-3333-3333-333333333333', 'westgate', 'Westgate Auto Clinic', 'Westgate', 'W',
-   '#0F766E', '#0B5A54', '#E2F2F0', 'book.westgateauto.co.ke', 'pro', 'KSh 7,500/mo',
+   '#0F766E', '#0B5A54', '#E2F2F0', 'book.westgateauto.co.ke', 'pro', 'Pro · custom domain', 'KSh 7,500/mo', 'White-label · own domain',
    array['Your own domain + SSL', 'Full white-label branding', 'Priority listing when verified'], false)
 on conflict (slug) do update set
   name = excluded.name, short_name = excluded.short_name, mark = excluded.mark,
   accent = excluded.accent, accent_dark = excluded.accent_dark, accent_soft = excluded.accent_soft,
-  domain = excluded.domain, plan = excluded.plan, price = excluded.price,
+  domain = excluded.domain, plan = excluded.plan, plan_label = excluded.plan_label,
+  price = excluded.price, sub = excluded.sub,
   features = excluded.features, is_verified = excluded.is_verified;
 
 -- Alternate url slugs (e.g. /juma → juma-auto)
@@ -36,31 +37,37 @@ on conflict (slug) do update set tenant_id = excluded.tenant_id;
 -- ---------------------------------------------------------------------------
 -- Garages (the catalog drivers browse, plus the AutoCheck-vetted Nyeri set)
 -- ---------------------------------------------------------------------------
-insert into garages (id, tenant_id, name, area, bays_total, mode, is_verified, rating, quote, quote_by)
+insert into garages (id, tenant_id, name, area, bays_total, mode, is_verified, rating, quote, quote_by, sort, details)
 values
   ('a0000000-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222',
    'Juma Auto Garage', 'Ngong Rd', 4, 'circle', false, null,
-   'Been bringing my car here for years. Booking online means I just drive straight in now.', 'Aisha · your contact'),
+   'Been bringing my car here for years. Booking online means I just drive straight in now.', 'Aisha · your contact', 0,
+   '{"dist":"1.2 km","next":"Today · 2:00 PM","trustType":"visits","trust":"You''ve booked here 6 times","avatars":[],"circleAvatars":[{"i":"A","c":"#D9802B"},{"i":"W","c":"#0E7C50"},{"i":"+3","c":"#7B857F"}],"circleText":"Aisha, Wanjiku and 3 others in your network use this garage."}'::jsonb),
   ('a0000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111',
    'Karanja Motors', 'Industrial Area', 6, 'circle', false, null,
-   'They never start work without calling me first with the price. Felt safe sending my daughter here.', 'Aisha · your contact'),
+   'They never start work without calling me first with the price. Felt safe sending my daughter here.', 'Aisha · your contact', 1,
+   '{"dist":"3.4 km","next":"Today · 4:30 PM","trustType":"referral","trust":"Recommended by Aisha","avatars":[{"i":"A","c":"#D9802B"}],"circleAvatars":[{"i":"A","c":"#D9802B"},{"i":"M","c":"#0E7C50"}],"circleText":"Aisha shared this garage with you. 2 people you know book here."}'::jsonb),
   ('a0000000-0000-0000-0000-000000000003', '33333333-3333-3333-3333-333333333333',
    'Westgate Auto Clinic', 'Westlands', 5, 'circle', false, null,
-   'No one talks down to you here. Clear quote, M-Pesa receipt, done.', 'Njeri · your contact'),
+   'No one talks down to you here. Clear quote, M-Pesa receipt, done.', 'Njeri · your contact', 2,
+   '{"dist":"2.1 km","next":"Tomorrow · 9:00 AM","trustType":"circle","trust":"Used by 4 women in your network","avatars":[{"i":"N","c":"#0E7C50"},{"i":"F","c":"#D9802B"}],"circleAvatars":[{"i":"N","c":"#0E7C50"},{"i":"F","c":"#D9802B"},{"i":"+2","c":"#7B857F"}],"circleText":"4 women in your network book here — a garage they trust."}'::jsonb),
   -- AutoCheck-vetted (verified) garages in Nyeri
   ('a0000000-0000-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111',
    'Mt Kenya Auto Repairs', 'Kimathi Way, Nyeri', 5, 'verified', true, 4.8,
-   'Stranded on the highway, booked in 2 minutes, they sorted my car the same afternoon.', 'Verified booking · May 2026'),
+   'Stranded on the highway, booked in 2 minutes, they sorted my car the same afternoon.', 'Verified booking · May 2026', 0,
+   '{"dist":"0.6 km","next":"Now","visits":"128","open":"Open now","avail":"Can receive you now","circleAvatars":[],"circleText":"Vetted by AutoCheck · 128 drivers booked here through the app."}'::jsonb),
   ('a0000000-0000-0000-0000-000000000005', '11111111-1111-1111-1111-111111111111',
    'Dedan Motors', 'Gakere Rd, Nyeri', 3, 'verified', true, 4.6,
-   'Fair price, showed me the worn part before replacing it. Trustworthy.', 'Verified booking · Apr 2026'),
+   'Fair price, showed me the worn part before replacing it. Trustworthy.', 'Verified booking · Apr 2026', 1,
+   '{"dist":"1.4 km","next":"Today · 1:30 PM","visits":"74","open":"Open now","avail":"1 bay free","circleAvatars":[],"circleText":"Vetted by AutoCheck · 74 verified visits, written quotes every time."}'::jsonb),
   ('a0000000-0000-0000-0000-000000000006', '11111111-1111-1111-1111-111111111111',
    'Highlands Garage', 'Ring Rd, Nyeri', 6, 'verified', true, 4.9,
-   'Best garage in town. Clean, professional, and they actually pick up the phone.', 'Verified booking · Jun 2026')
+   'Best garage in town. Clean, professional, and they actually pick up the phone.', 'Verified booking · Jun 2026', 2,
+   '{"dist":"2.2 km","next":"Today · 5:00 PM","visits":"203","open":"Open till 7 PM","avail":"Book ahead","circleAvatars":[],"circleText":"Vetted by AutoCheck · 203 verified visits, top-rated in Nyeri."}'::jsonb)
 on conflict (id) do update set
   name = excluded.name, area = excluded.area, bays_total = excluded.bays_total,
   mode = excluded.mode, is_verified = excluded.is_verified, rating = excluded.rating,
-  quote = excluded.quote, quote_by = excluded.quote_by;
+  quote = excluded.quote, quote_by = excluded.quote_by, sort = excluded.sort, details = excluded.details;
 
 -- ---------------------------------------------------------------------------
 -- Issue catalog + service durations (seeded per tenant)
