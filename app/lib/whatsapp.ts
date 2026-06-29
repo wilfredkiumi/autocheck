@@ -74,15 +74,23 @@ export async function sendButtons(to: string, body: string, buttons: ReplyButton
   return res.json()
 }
 
-/** First bot turn for a fresh inbound booking conversation. */
-export function greetingFor(tenant: TenantKey) {
-  const g = THEMES[tenant].short
-  return {
-    body: `Karibu ${g} 👋 Book your car straight in here — no calling around. What's the problem?`,
-    buttons: [
-      { id: 'sym_brakes', title: 'Brakes 🛑' },
-      { id: 'sym_engine', title: 'Engine / heat' },
-      { id: 'sym_other', title: 'Something else' },
-    ],
+/** Send a plain text message. No-ops with a log if credentials are absent. */
+export async function sendText(to: string, body: string) {
+  const token = process.env.WHATSAPP_TOKEN
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
+  if (!to || !token || !phoneId) {
+    console.info('[whatsapp] text skipped (no credentials):', { to, body })
+    return { skipped: true as const }
   }
+  const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'text',
+      text: { body },
+    }),
+  })
+  return res.json()
 }
