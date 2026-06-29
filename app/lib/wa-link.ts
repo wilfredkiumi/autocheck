@@ -24,13 +24,21 @@ export interface WaTarget {
   available: boolean
 }
 
-export function resolveWaTarget(tenant: TenantKey, ownNumber?: string): WaTarget {
-  const own = (ownNumber ?? '').replace(/[^0-9]/g, '')
+export function resolveWaTarget(
+  tenant: TenantKey,
+  opts: { ownNumber?: string; plate?: string } = {},
+): WaTarget {
+  const own = (opts.ownNumber ?? '').replace(/[^0-9]/g, '')
   const number = own || SHARED_NUMBER
   const short = THEMES[tenant]?.short ?? 'AutoCheck'
+  // The plate is wrapped in [brackets] so the webhook can parse it reliably out
+  // of the inbound message (see app/api/whatsapp/route.ts). It's the booking's
+  // identity across channels.
+  const plate = (opts.plate ?? '').trim().toUpperCase()
+  const tag = plate ? ` [${plate}]` : ''
   const prefill = own
-    ? `Hi ${short}, I'd like to book my car in.`
-    : `BOOK ${short} — I'd like to book my car in.`
+    ? `Hi ${short}, booking my car in${tag}.`
+    : `BOOK ${short}${tag} — I'd like to book my car in.`
   const href = number ? `https://wa.me/${number}?text=${encodeURIComponent(prefill)}` : ''
   return { number, href, available: Boolean(number) }
 }

@@ -323,7 +323,9 @@ export function Done({ vm }: { vm: VM }) {
           </svg>
         </div>
         <div style={{ font: "800 23px 'Archivo'" }}>Your bay is reserved</div>
-        <div style={{ font: "400 13px 'Manrope'", color: '#7B857F', marginTop: 4 }}>{vm.g.name} · {vm.slotLabel}</div>
+        <div style={{ font: "400 13px 'Manrope'", color: '#7B857F', marginTop: 4 }}>
+          {vm.g.name} · {vm.slotLabel}{vm.plate ? ` · ${vm.plate}` : ''}
+        </div>
         {vm.bookingRef && (
           <div style={{ display: 'inline-block', marginTop: 8, font: "700 12px 'Space Mono'", color: 'var(--acd)', background: 'var(--acs)', borderRadius: 999, padding: '4px 12px' }}>
             Ref #{vm.bookingRef}
