@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
       } = await supabase.auth.getUser()
       let dest = '/'
       if (user) {
+        // Attach WhatsApp bookings made with this phone to the account.
+        try {
+          await supabase.rpc('claim_bookings_by_phone')
+        } catch {
+          /* non-blocking */
+        }
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
