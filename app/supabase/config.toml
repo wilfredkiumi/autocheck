@@ -1,0 +1,48 @@
+# Supabase local config for AutoCheck.
+# `supabase start` runs a local stack; `supabase db reset` applies migrations + seed.sql.
+# Hosted projects mirror these settings in the dashboard (Auth → Providers).
+project_id = "autocheck"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+# Phone OTP — primary sign-in for drivers. WhatsApp is preferred, SMS is the
+# fallback; both are delivered through Twilio (channel chosen per request in the
+# app via signInWithOtp({ channel })). Provide credentials via env, never inline.
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+[auth.sms.twilio]
+account_sid = "env(TWILIO_ACCOUNT_SID)"
+message_service_sid = "env(TWILIO_MESSAGE_SERVICE_SID)"
+auth_token = "env(TWILIO_AUTH_TOKEN)"
+
+# Email + Google are enabled for garage-owner / platform-admin logins.
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"

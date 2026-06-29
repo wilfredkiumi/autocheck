@@ -1,0 +1,36 @@
+import { NextResponse, type NextRequest } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { homeForRole } from '@/lib/auth/roles'
+import type { UserRole } from '@/lib/supabase/types'
+
+// OAuth / email magic-link callback. Supabase redirects here with a `code` which
+// we exchange for a session cookie, then forward the user to their role's home.
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  const next = searchParams.get('next')
+
+  if (code) {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) {
+      if (next) return NextResponse.redirect(`${origin}${next}`)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      let dest = '/'
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .returns<{ role: UserRole }[]>()
+          .single()
+        dest = homeForRole(profile?.role ?? 'driver')
+      }
+      return NextResponse.redirect(`${origin}${dest}`)
+    }
+  }
+
+  return NextResponse.redirect(`${origin}/login?error=auth`)
+}
