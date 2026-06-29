@@ -4,16 +4,13 @@ import {
   DUR_PRESETS,
   fmtDur,
   fmtTime,
-  GARAGES,
   Garage,
   ISSUE_MINS,
-  ISSUES,
-  NYERI,
-  SERVICES,
   SLOTS,
-  THEMES,
+  STATIC_APP_DATA,
   TenantKey,
   ZONES,
+  type AppData,
 } from './data'
 
 export type Persona = 'driver' | 'owner' | 'whatsapp'
@@ -127,7 +124,12 @@ interface WaMessage {
 const AI_FALLBACK =
   'Likely front brake-pad wear with a possible wheel-alignment pull. Check front pads and discs, and test alignment on arrival.'
 
-export function useBooking(initialTenant?: TenantKey) {
+export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP_DATA) {
+  // Dynamic, tenant-scoped content — static demo arrays by default, or the
+  // Supabase-loaded bundle when the caller injects one. The rest of the hook is
+  // unchanged; it just reads these names instead of module-level constants.
+  const { THEMES, GARAGES, NYERI, ISSUES, SERVICES } = data
+
   const [st, setSt] = useState<State>(() =>
     initialTenant
       ? {
