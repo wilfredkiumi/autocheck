@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendButtons, sendText, tenantFromText } from '@/lib/whatsapp'
-import { advance, startConversation, WaConversation } from '@/lib/wa-flow'
+import { advance, startConversation, type WaConversation } from '@/lib/wa-flow'
 import { persistWaBooking } from '@/lib/db/wa-booking'
+import {
+  clearWaConversation,
+  getWaConversation,
+  saveWaConversation,
+} from '@/lib/db/wa-conversation'
 
 // WhatsApp Business Cloud API webhook — drives the STRUCTURED booking bot.
 //
@@ -12,12 +17,9 @@ import { persistWaBooking } from '@/lib/db/wa-booking'
 //        step. On completion the structured brief is delivered to the fundi.
 //        Sends no-op without WHATSAPP_* credentials, so it runs anywhere.
 //
-// NOTE: conversation state is held in an in-memory Map keyed by phone number —
-// fine for a single instance / demo. A production deploy must move this to a
-// shared store (Redis / DB) — the same booking store the PWA reads, which is how
-// the two channels stay one engine.
-
-const conversations = new Map<string, WaConversation>()
+// Conversation state lives in the wa_conversations table (lib/db/wa-conversation)
+// so it survives serverless cold starts and multiple instances; it falls back to
+// an in-process Map when Supabase isn't configured.
 
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // Resume an existing conversation, or start one (routing the tenant from the
     // prefilled "BOOK <garage>" keyword the wa.me / QR link carries).
-    const existing = conversations.get(msg.from)
+    const existing = await getWaConversation(msg.from)
     const turn = existing
       ? advance(existing, buttonId, text)
       : startConversation(tenantFromText(text))
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
       if (plate) turn.conversation = { ...turn.conversation, plate }
     }
 
-    conversations.set(msg.from, turn.conversation)
+    await saveWaConversation(msg.from, turn.conversation)
 
     try {
       let { body } = turn.outbound
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
       // Structured brief lands on the garage's WhatsApp too (a fundi with only
       // WhatsApp gets the same prepared booking the dashboard would show).
       if (garageBrief) await sendText(garageNumber(turn.conversation), garageBrief)
-      if (terminal) conversations.delete(msg.from)
+      if (terminal) await clearWaConversation(msg.from)
     } catch (e) {
       console.error('[whatsapp] send failed:', e)
     }

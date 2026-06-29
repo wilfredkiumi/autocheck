@@ -165,6 +165,11 @@ export interface Database {
       bookings: Table<Booking>
       booking_issues: Table<BookingIssue>
       vehicles: Table<Vehicle>
+      wa_conversations: Table<{
+        phone: string
+        state: Record<string, unknown>
+        updated_at: string
+      }>
     }
     Views: Record<string, never>
     Functions: {
@@ -172,6 +177,7 @@ export interface Database {
       auth_tenant_id: { Args: Record<string, never>; Returns: string }
       normalize_plate: { Args: { p: string }; Returns: string }
       upsert_vehicle: { Args: { p_plate: string; p_make_model?: string }; Returns: string }
+      claim_bookings_by_phone: { Args: Record<string, never>; Returns: number }
     }
     Enums: {
       user_role: UserRole

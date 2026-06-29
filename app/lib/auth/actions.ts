@@ -78,6 +78,13 @@ async function redirectToRoleHome(): Promise<never> {
   } = await supabase.auth.getUser()
   let role: UserRole = 'driver'
   if (user) {
+    // Attach any WhatsApp bookings made with this phone (driver_id was null) to
+    // the now-signed-in account, so they show up under "my bookings".
+    try {
+      await supabase.rpc('claim_bookings_by_phone')
+    } catch {
+      /* non-blocking */
+    }
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
