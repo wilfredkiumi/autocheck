@@ -7,7 +7,7 @@ import { persistWaBooking } from '@/lib/db/wa-booking'
 //
 // GET  — Meta's subscription verification handshake.
 // POST — inbound messages. We run a fixed booking state machine (lib/wa-flow):
-//        symptom → media → slot → deposit → confirmed. It is deliberately not a
+//        symptom → media → slot → confirmed. It is deliberately not a
 //        general-purpose assistant; off-script messages re-prompt the current
 //        step. On completion the structured brief is delivered to the fundi.
 //        Sends no-op without WHATSAPP_* credentials, so it runs anywhere.
@@ -50,6 +50,13 @@ export async function POST(req: NextRequest) {
       ? advance(existing, buttonId, text)
       : startConversation(tenantFromText(text))
 
+    // Capture the number plate the homepage baked into the opener ("… [KDA123A]")
+    // on the first message; it rides the conversation through to persistence.
+    if (!existing) {
+      const plate = parsePlate(text)
+      if (plate) turn.conversation = { ...turn.conversation, plate }
+    }
+
     conversations.set(msg.from, turn.conversation)
 
     try {
@@ -65,6 +72,7 @@ export async function POST(req: NextRequest) {
           slot: turn.conversation.slot,
           phone: msg.from,
           brief: garageBrief,
+          plate: turn.conversation.plate,
         })
         if (persisted) body = body.replace(/Ref #AG-\d+/, `Ref #${persisted.ref}`)
       }
@@ -87,6 +95,12 @@ export async function POST(req: NextRequest) {
 // tenant; here it falls back to the business number env.
 function garageNumber(_conv: WaConversation): string {
   return process.env.WHATSAPP_GARAGE_NUMBER || process.env.WHATSAPP_BUSINESS_NUMBER || ''
+}
+
+// Pull a bracketed plate out of the opener, e.g. "BOOK Juma Auto [KDA123A] — …".
+function parsePlate(text: string): string | undefined {
+  const m = (text || '').match(/\[([A-Za-z0-9 ]{4,12})\]/)
+  return m ? m[1].trim().toUpperCase() : undefined
 }
 
 interface InboundMessage {

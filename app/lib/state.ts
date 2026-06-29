@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { createBookingAction } from '@/lib/actions/booking'
+import { resolveWaTarget } from './wa-link'
 import {
   BOOKINGS,
   DUR_PRESETS,
@@ -51,6 +52,9 @@ interface State {
   bookingRef: string | null
   needSignIn: boolean
   bookingError: string | null
+  plate: string
+  sheetOpen: boolean
+  sheetNext: number
   durations: Record<string, number>
   waStep: number
   waSymptom: string
@@ -92,6 +96,9 @@ const INITIAL: State = {
   bookingRef: null,
   needSignIn: false,
   bookingError: null,
+  plate: '',
+  sheetOpen: false,
+  sheetNext: 1,
   durations: {},
   waStep: 0,
   waSymptom: '',
@@ -296,6 +303,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       slotLabel,
       fulfilment: st.fulfil,
       hasPhoto: st.photos.length > 0,
+      plate: st.plate,
     })
     if (res.ok) patch({ submitting: false, bookingRef: res.ref, s: 4 })
     else if (res.needAuth) patch({ submitting: false, needSignIn: true })
@@ -553,14 +561,23 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     isVerifiedMode: g.mode === 'verified',
     isCircleMode: g.mode !== 'verified',
   })
+  // Tapping a garage opens the "how do you want to book?" sheet (plate + channel)
+  // rather than diving straight into the funnel. sheetNext is the app screen to
+  // resume on if they choose "Continue in the app".
+  const openSheet = (p: Partial<State>) =>
+    patch({ ...p, sheetOpen: true, bookingError: null, needSignIn: false })
   const garages = GARAGES.map((g, i) => ({
     ...decorate(g),
-    onClick: () => patch({ away: null, g: i, s: 1 }),
+    onClick: () => openSheet({ away: null, g: i, sheetNext: 1 }),
   }))
   const nyeri = NYERI.map((g) => ({
     ...decorate(g),
-    onClick: () => patch({ away: g, s: 1 }),
+    onClick: () => openSheet({ away: g, sheetNext: 1 }),
   }))
+
+  // The garage the sheet is acting on, and its WhatsApp target (plate baked in).
+  const sheetGarage = st.away || GARAGES[st.g]
+  const sheetWa = resolveWaTarget(sheetGarage?.tenantKey ?? st.tenant, { plate: st.plate })
   const g = decorate(st.away || GARAGES[st.g])
 
   const issues = ISSUES.map((name) => {
@@ -802,8 +819,21 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     cta1: st.submitting
       ? 'Holding your bay…'
       : canConfirm
-        ? 'Hold my bay · pay deposit'
+        ? 'Hold my bay'
         : 'Pick a slot to continue',
+
+    // booking sheet (plate + channel chooser)
+    sheetOpen: st.sheetOpen,
+    sheetGarageName: sheetGarage?.name ?? '',
+    plate: st.plate,
+    onPlate: (e: React.ChangeEvent<HTMLInputElement>) =>
+      patch({ plate: e.target.value.toUpperCase() }),
+    canBook: st.plate.trim().length >= 4,
+    openBrandSheet: () => openSheet({ sheetNext: 2 }),
+    closeSheet: () => patch({ sheetOpen: false }),
+    continueInApp: () => patch({ sheetOpen: false, s: st.sheetNext }),
+    sheetWaHref: sheetWa.href,
+    sheetWaAvailable: sheetWa.available,
     cta1bg: canConfirm ? T.accent : '#D8DEDB',
     cta1fg: canConfirm ? '#fff' : '#9AA6A0',
     submitBooking: () => submitBooking(),
@@ -881,6 +911,8 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         bookingRef: null,
         needSignIn: false,
         bookingError: null,
+        plate: '',
+        sheetOpen: false,
       }),
   }
 }

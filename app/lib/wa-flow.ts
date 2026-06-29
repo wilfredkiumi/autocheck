@@ -3,8 +3,8 @@
 // This is intentionally a STRUCTURED booking flow — a fixed state machine driven
 // by interactive reply buttons — not a general-purpose "responds like you"
 // assistant. That is a deliberate product + policy choice:
-//   • Product: our value is reserving a real bay (capacity, slot, deposit,
-//     structured technician brief), not open-ended chat. A garage in a
+//   • Product: our value is reserving a real bay (capacity, slot, structured
+//     technician brief), not open-ended chat. A garage in a
 //     referral / trust-sensitive market is booking *with Juma*, not talking to
 //     an AI wearing Juma's name.
 //   • Policy: WhatsApp's Jan-2026 AI rules disallow general-purpose assistants
@@ -17,7 +17,7 @@
 
 import { TenantKey, THEMES } from './data'
 
-export type WaStep = 'symptom' | 'media' | 'slot' | 'deposit' | 'done'
+export type WaStep = 'symptom' | 'media' | 'slot' | 'plate' | 'done'
 
 export interface WaButton {
   id: string
@@ -29,6 +29,7 @@ export interface WaConversation {
   step: WaStep
   symptom?: string
   slot?: string
+  plate?: string // parsed from the prefilled "BOOK <garage> [PLATE]" opener
 }
 
 export interface WaOutbound {
@@ -138,35 +139,49 @@ export function advance(conv: WaConversation, buttonId: string | null, text: str
           { id: 'slot_3', title: 'Tomorrow · 9:00 AM' },
         ])
       }
+      // If the homepage already passed the plate (in the prefill), confirm now.
+      // Otherwise ask for it in chat — the plate is the booking's identity, so we
+      // want it on every booking, but we never make the driver type it twice.
+      if (conv.plate) return confirm({ ...conv, slot })
       return {
-        conversation: { ...conv, step: 'deposit', slot },
+        conversation: { ...conv, step: 'plate', slot },
         outbound: {
-          body: 'Reserved ✅ Pay a KSh 500 deposit to hold your bay — it comes off your final bill.',
-          buttons: [{ id: 'pay', title: 'Pay KSh 500 · M-Pesa' }],
+          body: "Last thing — what's your car's number plate? (e.g. KDA 123A)",
         },
       }
     }
 
-    case 'deposit': {
-      if (buttonId !== 'pay') {
-        return reprompt('Pay the deposit to hold your bay:', [
-          { id: 'pay', title: 'Pay KSh 500 · M-Pesa' },
-        ])
+    case 'plate': {
+      const plate = text.trim().toUpperCase()
+      if (plate.replace(/[^A-Z0-9]/g, '').length < 4) {
+        return {
+          conversation: conv,
+          outbound: { body: 'Reply with your number plate, e.g. KDA 123A.' },
+        }
       }
-      const sym = conv.symptom || 'Issue described'
-      return {
-        conversation: { ...conv, step: 'done' },
-        outbound: {
-          body: `Booking confirmed 🎉\n${g} · ${conv.slot}\nRef #AG-4821\n\nDrive straight in — no queue. We'll WhatsApp you the moment your car is ready.`,
-          garageBrief: `📋 New booking — ${sym}. Likely worn front pads, check alignment. Bay held: ${conv.slot}. KSh 500 deposit paid.`,
-          terminal: true,
-        },
-      }
+      return confirm({ ...conv, plate })
     }
 
     case 'done':
     default:
       // Conversation finished — any further message starts a fresh booking.
       return startConversation(conv.tenant)
+  }
+}
+
+// Build the terminal "confirmed" turn. No deposit — the driver and garage already
+// know each other, so a chosen slot (with a plate) confirms outright.
+function confirm(conv: WaConversation): WaTurn {
+  const g = THEMES[conv.tenant].short
+  const sym = conv.symptom || 'Issue described'
+  const car = conv.plate ? `\nCar: ${conv.plate}` : ''
+  const carBrief = conv.plate ? ` Car: ${conv.plate}.` : ''
+  return {
+    conversation: { ...conv, step: 'done' },
+    outbound: {
+      body: `Booking confirmed 🎉\n${g} · ${conv.slot}${car}\nRef #AG-4821\n\nDrive straight in — no queue, no deposit. We'll WhatsApp you the moment your car is ready.`,
+      garageBrief: `📋 New booking — ${sym}.${carBrief} Bay held: ${conv.slot}.`,
+      terminal: true,
+    },
   }
 }
