@@ -117,8 +117,17 @@ export type Booking = {
   has_photo: boolean
   deposit_paid: boolean
   channel: 'app' | 'whatsapp'
+  vehicle_id: string | null
+  plate: string | null
   created_at: string
   updated_at: string
+}
+
+export type Vehicle = {
+  id: string
+  plate: string
+  make_model: string | null
+  created_at: string
 }
 
 export type BookingIssue = {
@@ -155,11 +164,14 @@ export interface Database {
       }>
       bookings: Table<Booking>
       booking_issues: Table<BookingIssue>
+      vehicles: Table<Vehicle>
     }
     Views: Record<string, never>
     Functions: {
       auth_role: { Args: Record<string, never>; Returns: UserRole }
       auth_tenant_id: { Args: Record<string, never>; Returns: string }
+      normalize_plate: { Args: { p: string }; Returns: string }
+      upsert_vehicle: { Args: { p_plate: string; p_make_model?: string }; Returns: string }
     }
     Enums: {
       user_role: UserRole

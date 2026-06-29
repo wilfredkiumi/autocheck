@@ -13,6 +13,7 @@ export type CreateBookingInput = {
   slotLabel?: string
   fulfilment?: Fulfilment | null
   hasPhoto?: boolean
+  plate?: string
 }
 
 export type CreateBookingResult =
@@ -48,6 +49,14 @@ export async function createBookingAction(
     .maybeSingle()
   const customerName = profile?.full_name || profile?.phone || 'Driver'
 
+  // The car is the booking's identity — get-or-create the vehicle by plate.
+  let vehicleId: string | null = null
+  const plate = (input.plate || '').trim()
+  if (plate) {
+    const { data } = await supabase.rpc('upsert_vehicle', { p_plate: plate })
+    vehicleId = (data as string | null) ?? null
+  }
+
   const { data: booking, error: bookingErr } = await supabase
     .from('bookings')
     .insert({
@@ -56,6 +65,9 @@ export async function createBookingAction(
       driver_id: user.id,
       customer_name: customerName,
       customer_phone: profile?.phone ?? null,
+      vehicle: plate ? plate.toUpperCase() : null,
+      vehicle_id: vehicleId,
+      plate: plate ? plate.toUpperCase() : null,
       note: input.note || null,
       slot_label: input.slotLabel || null,
       fulfilment: input.fulfilment ?? null,

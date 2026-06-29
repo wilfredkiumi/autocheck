@@ -22,6 +22,7 @@ export async function persistWaBooking(input: {
   slot?: string
   phone: string
   brief?: string
+  plate?: string
 }): Promise<{ ref: string } | null> {
   if (!isSupabaseConfigured || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null
 
@@ -47,6 +48,14 @@ export async function persistWaBooking(input: {
       .maybeSingle()
     if (!garage) return null
 
+    // Get-or-create the vehicle by plate (the booking's cross-channel identity).
+    let vehicleId: string | null = null
+    const plate = (input.plate || '').trim()
+    if (plate) {
+      const { data } = await supabase.rpc('upsert_vehicle', { p_plate: plate })
+      vehicleId = (data as string | null) ?? null
+    }
+
     const { data: booking, error } = await supabase
       .from('bookings')
       .insert({
@@ -55,6 +64,9 @@ export async function persistWaBooking(input: {
         driver_id: null,
         customer_name: input.phone,
         customer_phone: input.phone,
+        vehicle: plate ? plate.toUpperCase() : null,
+        vehicle_id: vehicleId,
+        plate: plate ? plate.toUpperCase() : null,
         note: input.symptom || null,
         ai_summary: input.brief || null,
         slot_label: input.slot || null,
