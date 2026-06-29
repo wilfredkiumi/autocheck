@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendButtons, sendText, tenantFromText } from '@/lib/whatsapp'
 import { advance, startConversation, WaConversation } from '@/lib/wa-flow'
+import { persistWaBooking } from '@/lib/db/wa-booking'
 
 // WhatsApp Business Cloud API webhook — drives the STRUCTURED booking bot.
 //
@@ -52,7 +53,21 @@ export async function POST(req: NextRequest) {
     conversations.set(msg.from, turn.conversation)
 
     try {
-      const { body, buttons, garageBrief, terminal } = turn.outbound
+      let { body } = turn.outbound
+      const { buttons, garageBrief, terminal } = turn.outbound
+      // On completion, persist the booking so it reaches the owner dashboard —
+      // the same store the PWA writes to — and stamp the real reference into the
+      // confirmation. No-ops without Supabase, so the bot still works standalone.
+      if (terminal) {
+        const persisted = await persistWaBooking({
+          tenant: turn.conversation.tenant,
+          symptom: turn.conversation.symptom,
+          slot: turn.conversation.slot,
+          phone: msg.from,
+          brief: garageBrief,
+        })
+        if (persisted) body = body.replace(/Ref #AG-\d+/, `Ref #${persisted.ref}`)
+      }
       if (buttons?.length) await sendButtons(msg.from, body, buttons)
       else await sendText(msg.from, body)
       // Structured brief lands on the garage's WhatsApp too (a fundi with only

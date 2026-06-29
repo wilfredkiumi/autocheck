@@ -84,6 +84,7 @@ function mapTheme(t: Tenant): Theme {
 function mapGarage(g: DbGarage): DemoGarage {
   const d = g.details ?? {}
   return {
+    id: g.id,
     name: g.name,
     area: g.area,
     dist: d.dist ?? '',
