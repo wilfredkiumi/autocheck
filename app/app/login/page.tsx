@@ -3,9 +3,17 @@ import { LoginForm } from './login-form'
 
 // Public sign-in page. Phone OTP (WhatsApp primary, SMS fallback) is the driver
 // path; email / Google are offered for garage-owner and platform-admin logins.
+// Accepts ?next= so the garage registration flow can bounce users back after login.
 export const metadata = { title: 'Sign in · AutoCheck' }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
+  const { next } = await searchParams
+  const isRegisterRedirect = next === '/register'
+
   return (
     <main
       style={{
@@ -46,20 +54,24 @@ export default function LoginPage() {
           <div style={{ fontWeight: 800, fontSize: 18, color: '#0F1A14' }}>AutoCheck</div>
         </div>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F1A14', margin: '0 0 4px' }}>
-          Sign in
+          {isRegisterRedirect ? 'Sign in to register your garage' : 'Sign in'}
         </h1>
         <p style={{ fontSize: 14, color: '#7B857F', margin: '0 0 20px' }}>
-          Book your car in — with a garage you already trust.
+          {isRegisterRedirect
+            ? 'Sign in first, then we\'ll take you straight to the registration form.'
+            : 'Book your car in — with a garage you already trust.'}
         </p>
 
         {isSupabaseConfigured ? (
           <>
-            <LoginForm />
-            <div style={{ textAlign: 'center', marginTop: 16 }}>
-              <a href="/register" style={{ fontSize: 13, fontWeight: 600, color: '#0E7C50', textDecoration: 'none' }}>
-                Own a garage? Register here
-              </a>
-            </div>
+            <LoginForm next={next} />
+            {!isRegisterRedirect && (
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <a href="/register" style={{ fontSize: 13, fontWeight: 600, color: '#0E7C50', textDecoration: 'none' }}>
+                  Own a garage? Register here
+                </a>
+              </div>
+            )}
           </>
         ) : (
           <div

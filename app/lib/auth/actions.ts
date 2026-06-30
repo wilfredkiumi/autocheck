@@ -31,33 +31,39 @@ export async function requestPhoneOtp(
 }
 
 // Step 2 — exchange the passcode for a session, then route by role.
+// An optional `next` path (e.g. "/register") overrides the default role-based
+// redirect so callers like the garage-registration flow can bounce users back.
 export async function verifyPhoneOtp(
   phone: string,
   token: string,
+  next?: string,
 ): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' })
   if (error) return { ok: false, error: error.message }
+  if (next) redirect(next)
   await redirectToRoleHome()
   return { ok: true }
 }
 
 // Email magic-link / password is offered to garage owners and platform admins.
-export async function requestEmailOtp(email: string): Promise<ActionResult> {
+export async function requestEmailOtp(email: string, next?: string): Promise<ActionResult> {
+  const callbackPath = next ? `/auth/callback?next=${encodeURIComponent(next)}` : '/auth/callback'
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: redirectUrl('/auth/callback') },
+    options: { emailRedirectTo: redirectUrl(callbackPath) },
   })
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
 
-export async function signInWithGoogle(): Promise<ActionResult> {
+export async function signInWithGoogle(next?: string): Promise<ActionResult> {
+  const callbackPath = next ? `/auth/callback?next=${encodeURIComponent(next)}` : '/auth/callback'
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: redirectUrl('/auth/callback') },
+    options: { redirectTo: redirectUrl(callbackPath) },
   })
   if (error) return { ok: false, error: error.message }
   if (data.url) redirect(data.url)

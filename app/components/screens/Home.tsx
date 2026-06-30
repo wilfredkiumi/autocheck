@@ -116,6 +116,18 @@ export function ConsumerHome({ vm }: { vm: VM }) {
           </div>
         </div>
       </div>
+      <div style={{ padding: '10px 20px 0', textAlign: 'center' }}>
+        <a
+          href="/register"
+          style={{
+            font: "600 13px 'Manrope'",
+            color: 'var(--ac)',
+            textDecoration: 'none',
+          }}
+        >
+          Own a garage? Register it on AutoCheck →
+        </a>
+      </div>
       <div style={{ height: 8 }} />
     </div>
   )

@@ -13,7 +13,7 @@ type PhoneStep = 'enter' | 'verify'
 
 const ACCENT = '#0E7C50'
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const [mode, setMode] = useState<Mode>('phone')
   const [step, setStep] = useState<PhoneStep>('enter')
   const [phone, setPhone] = useState('')
@@ -41,7 +41,7 @@ export function LoginForm() {
   const verify = () =>
     start(async () => {
       setErr(null)
-      const res = await verifyPhoneOtp(phone.trim(), code.trim())
+      const res = await verifyPhoneOtp(phone.trim(), code.trim(), next)
       // On success the action redirects; we only land here on failure.
       if (!res.ok) setErr(res.error)
     })
@@ -50,7 +50,7 @@ export function LoginForm() {
     start(async () => {
       setErr(null)
       setMsg(null)
-      const res = await requestEmailOtp(email.trim())
+      const res = await requestEmailOtp(email.trim(), next)
       if (res.ok) setMsg(`Magic link sent to ${email.trim()}. Check your inbox.`)
       else setErr(res.error)
     })
@@ -58,7 +58,7 @@ export function LoginForm() {
   const google = () =>
     start(async () => {
       setErr(null)
-      const res = await signInWithGoogle()
+      const res = await signInWithGoogle(next)
       if (!res.ok) setErr(res.error)
     })
 
