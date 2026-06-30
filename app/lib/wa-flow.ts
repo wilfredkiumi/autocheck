@@ -50,8 +50,7 @@ export interface WaTurn {
 
 const SLOT_LABELS: Record<string, string> = {
   slot_1: 'Today · 2:00 PM',
-  slot_2: 'Today · 4:30 PM',
-  slot_3: 'Tomorrow · 9:00 AM',
+  slot_2: 'Tomorrow · 9:00 AM',
 }
 
 /** Start (or restart) a booking conversation for a tenant. */
@@ -84,6 +83,9 @@ const SYMPTOM_LABELS: Record<string, string> = {
  * answered like an assistant — that is what keeps this a structured booking bot.
  * The one exception is the symptom step, where free text is captured as the
  * issue description (still structured intake, not open conversation).
+ *
+ * Every step after symptom supports a "go_back" button to return to the
+ * previous step, within WhatsApp's 3-button limit.
  */
 export function advance(conv: WaConversation, buttonId: string | null, text: string): WaTurn {
   const g = THEMES[conv.tenant].short
@@ -91,6 +93,30 @@ export function advance(conv: WaConversation, buttonId: string | null, text: str
     conversation: conv,
     outbound: { body: `Tap an option below to continue 👇\n\n${body}`, buttons },
   })
+
+  // Handle "go back" from any step after symptom.
+  if (buttonId === 'go_back') {
+    switch (conv.step) {
+      case 'media':
+        return startConversation(conv.tenant)
+      case 'slot':
+        return {
+          conversation: { ...conv, step: 'media' },
+          outbound: {
+            body: "Got it 👍 Add a photo or voice note if you can — or I'll jump to available times.",
+            buttons: MEDIA_BUTTONS,
+          },
+        }
+      case 'plate':
+        return {
+          conversation: { ...conv, step: 'slot' },
+          outbound: {
+            body: `Next openings at ${g}:`,
+            buttons: SLOT_BUTTONS,
+          },
+        }
+    }
+  }
 
   switch (conv.step) {
     case 'symptom': {
@@ -100,32 +126,20 @@ export function advance(conv: WaConversation, buttonId: string | null, text: str
         conversation: { ...conv, step: 'media', symptom },
         outbound: {
           body: "Got it 👍 Add a photo or voice note if you can — or I'll jump to available times.",
-          buttons: [
-            { id: 'media_photo', title: '📷 Send a photo' },
-            { id: 'media_voice', title: '🎤 Voice note' },
-            { id: 'media_skip', title: 'Skip → see times' },
-          ],
+          buttons: MEDIA_BUTTONS,
         },
       }
     }
 
     case 'media': {
       if (!buttonId || !buttonId.startsWith('media_')) {
-        return reprompt('Add a photo or voice note, or skip to times.', [
-          { id: 'media_photo', title: '📷 Send a photo' },
-          { id: 'media_voice', title: '🎤 Voice note' },
-          { id: 'media_skip', title: 'Skip → see times' },
-        ])
+        return reprompt('Send a photo/voice note, or skip to times.', MEDIA_BUTTONS)
       }
       return {
         conversation: { ...conv, step: 'slot' },
         outbound: {
           body: `Asante. That looks like ~a 2-hour job. Next openings at ${g}:`,
-          buttons: [
-            { id: 'slot_1', title: 'Today · 2:00 PM' },
-            { id: 'slot_2', title: 'Today · 4:30 PM' },
-            { id: 'slot_3', title: 'Tomorrow · 9:00 AM' },
-          ],
+          buttons: SLOT_BUTTONS,
         },
       }
     }
@@ -133,20 +147,14 @@ export function advance(conv: WaConversation, buttonId: string | null, text: str
     case 'slot': {
       const slot = buttonId ? SLOT_LABELS[buttonId] : undefined
       if (!slot) {
-        return reprompt('Pick one of the available times:', [
-          { id: 'slot_1', title: 'Today · 2:00 PM' },
-          { id: 'slot_2', title: 'Today · 4:30 PM' },
-          { id: 'slot_3', title: 'Tomorrow · 9:00 AM' },
-        ])
+        return reprompt('Pick one of the available times:', SLOT_BUTTONS)
       }
-      // If the homepage already passed the plate (in the prefill), confirm now.
-      // Otherwise ask for it in chat — the plate is the booking's identity, so we
-      // want it on every booking, but we never make the driver type it twice.
       if (conv.plate) return confirm({ ...conv, slot })
       return {
         conversation: { ...conv, step: 'plate', slot },
         outbound: {
           body: "Last thing — what's your car's number plate? (e.g. KDA 123A)",
+          buttons: [{ id: 'go_back', title: '← Go back' }],
         },
       }
     }
@@ -156,7 +164,10 @@ export function advance(conv: WaConversation, buttonId: string | null, text: str
       if (plate.replace(/[^A-Z0-9]/g, '').length < 4) {
         return {
           conversation: conv,
-          outbound: { body: 'Reply with your number plate, e.g. KDA 123A.' },
+          outbound: {
+            body: 'Reply with your number plate, e.g. KDA 123A.',
+            buttons: [{ id: 'go_back', title: '← Go back' }],
+          },
         }
       }
       return confirm({ ...conv, plate })
@@ -164,10 +175,21 @@ export function advance(conv: WaConversation, buttonId: string | null, text: str
 
     case 'done':
     default:
-      // Conversation finished — any further message starts a fresh booking.
       return startConversation(conv.tenant)
   }
 }
+
+const MEDIA_BUTTONS: WaButton[] = [
+  { id: 'media_photo', title: '📷 Send media' },
+  { id: 'media_skip', title: 'Skip → see times' },
+  { id: 'go_back', title: '← Go back' },
+]
+
+const SLOT_BUTTONS: WaButton[] = [
+  { id: 'slot_1', title: 'Today · 2:00 PM' },
+  { id: 'slot_2', title: 'Tomorrow · 9:00 AM' },
+  { id: 'go_back', title: '← Go back' },
+]
 
 // Build the terminal "confirmed" turn. No deposit — the driver and garage already
 // know each other, so a chosen slot (with a plate) confirms outright.

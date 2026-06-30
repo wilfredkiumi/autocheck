@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendButtons, sendText, tenantFromText } from '@/lib/whatsapp'
 import { advance, startConversation, type WaConversation } from '@/lib/wa-flow'
+import { THEMES } from '@/lib/data'
 import { persistWaBooking } from '@/lib/db/wa-booking'
+import { generateBookingSummary } from '@/lib/ai-summary'
 import {
   clearWaConversation,
   getWaConversation,
@@ -68,12 +70,20 @@ export async function POST(req: NextRequest) {
       // the same store the PWA writes to — and stamp the real reference into the
       // confirmation. No-ops without Supabase, so the bot still works standalone.
       if (terminal) {
+        const aiSummary = await generateBookingSummary({
+          symptom: turn.conversation.symptom,
+          plate: turn.conversation.plate,
+          slot: turn.conversation.slot,
+          phone: msg.from,
+          garageName: THEMES[turn.conversation.tenant].short,
+        })
+
         const persisted = await persistWaBooking({
           tenant: turn.conversation.tenant,
           symptom: turn.conversation.symptom,
           slot: turn.conversation.slot,
           phone: msg.from,
-          brief: garageBrief,
+          brief: aiSummary,
           plate: turn.conversation.plate,
         })
         if (persisted) body = body.replace(/Ref #AG-\d+/, `Ref #${persisted.ref}`)

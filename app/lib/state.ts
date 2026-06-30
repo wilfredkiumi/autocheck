@@ -213,11 +213,16 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     })
 
   const waPick = (value: string) => {
+    if (value === '__back__') {
+      const s = st.waStep
+      if (s === 1) patch({ waStep: 0, waSymptom: '' })
+      else if (s === 2) patch({ waStep: 1, waDetail: '' })
+      return
+    }
     const s = st.waStep
     if (s === 0) patch({ waStep: 1, waSymptom: value })
     else if (s === 1) patch({ waStep: 2, waDetail: value })
     else if (s === 2) patch({ waStep: 3, waSlot: value })
-    else if (s === 3) patch({ waStep: 4 })
   }
   const waReset = () =>
     patch({ waStep: 0, waSymptom: '', waDetail: '', waSlot: '', waOwnerStep: 0 })
@@ -407,27 +412,18 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     if (step >= 3) {
       m.push({ from: 'user', text: st.waSlot, time: '9:42' })
       m.push({
-        from: 'bot',
-        text: 'Reserved ✅  Pay a KSh 500 deposit to hold your bay — it comes off your final bill.',
-        time: '9:42',
-      })
-    }
-    if (step >= 4) {
-      m.push({ from: 'user', text: 'Paid KSh 500 — M-Pesa ✅', time: '9:43' })
-      m.push({
         card: true,
         title: 'Booking confirmed 🎉',
-        line: `${garage} · Today 2:00 PM`,
+        line: `${garage} · ${st.waSlot}`,
         ref: 'Ref #AG-4821',
-        sub: 'Drive straight in — no queue. We’ll WhatsApp you the moment your car is ready.',
+        sub: 'Drive straight in — no queue, no deposit. We will WhatsApp you the moment your car is ready.',
       })
       m.push({
         note: true,
-        text: `📋  Sent to ${garage}’s WhatsApp too: “Brakes — likely worn front pads, check alignment.” They’re set up before you arrive.`,
+        text: `📋  Sent to ${garage}'s WhatsApp too: "${st.waSymptom} — ready for inspection." They are set up before you arrive.`,
       })
     }
     let replies: { label: string; value: string }[] = []
-    let mpesa = false
     let done = false
     if (step === 0)
       replies = [
@@ -437,27 +433,27 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       ]
     else if (step === 1)
       replies = [
-        { label: '📷 Send a photo', value: '📷 Photo sent' },
-        { label: '🎤 Voice note', value: '🎤 Voice note · 0:09' },
+        { label: '📷 Send media', value: '📷 Photo sent' },
         { label: 'Skip → see times', value: 'Just book me in' },
+        { label: '← Go back', value: '__back__' },
       ]
     else if (step === 2)
       replies = [
         { label: 'Today · 2:00 PM', value: 'Today · 2:00 PM' },
-        { label: 'Today · 4:30 PM', value: 'Today · 4:30 PM' },
         { label: 'Tomorrow · 9:00 AM', value: 'Tomorrow · 9:00 AM' },
+        { label: '← Go back', value: '__back__' },
       ]
-    else if (step === 3) {
-      replies = [{ label: 'Pay KSh 500 · M-Pesa', value: 'pay' }]
-      mpesa = true
-    } else done = true
-    const replyItems = replies.map((r) => ({
-      label: r.label,
-      onClick: () => waPick(r.value),
-      bg: mpesa ? '#00A550' : '#fff',
-      fg: mpesa ? '#fff' : '#008069',
-      bd: mpesa ? '#00A550' : '#E6E1DA',
-    }))
+    else done = true
+    const replyItems = replies.map((r) => {
+      const isBack = r.value === '__back__'
+      return {
+        label: r.label,
+        onClick: () => waPick(r.value),
+        bg: isBack ? 'transparent' : '#fff',
+        fg: isBack ? '#8696A0' : '#008069',
+        bd: isBack ? '#D1D5D8' : '#E6E1DA',
+      }
+    })
     return { msgs: m, replies: replyItems, done }
   }
 
@@ -475,7 +471,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         summary:
           'Likely worn front pads + alignment pull. Inspect on arrival, quote a pad set.',
         slot: 'Today · 2:00 PM',
-        deposit: 'KSh 500 paid',
+        deposit: 'Confirmed',
       },
     ]
     if (step >= 1) {
