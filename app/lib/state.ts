@@ -58,6 +58,7 @@ interface State {
   sheetOpen: boolean
   sheetNext: number
   durations: Record<string, number>
+  profileOpen: boolean
   waStep: number
   waSymptom: string
   waDetail: string
@@ -100,6 +101,7 @@ const INITIAL: State = {
   bookingError: null,
   plate: '',
   driverName: '',
+  profileOpen: false,
   sheetOpen: false,
   sheetNext: 1,
   durations: {},
@@ -831,7 +833,16 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
 
     // booking sheet (plate + channel chooser)
     sheetOpen: st.sheetOpen,
+    // profile sheet
+    isSignedIn: !!data.driver,
     isReturningDriver: !!data.driver?.name,
+    profileOpen: st.profileOpen,
+    openProfile: () => patch({ profileOpen: true }),
+    closeProfile: () => patch({ profileOpen: false }),
+    profileName: data.driver?.name ?? '',
+    profileInitial: (data.driver?.name ?? 'D')[0].toUpperCase(),
+    profilePlates: data.driver?.plates ?? [],
+
     sheetGarageName: sheetGarage?.name ?? '',
     plate: st.plate,
     onPlate: (e: React.ChangeEvent<HTMLInputElement>) =>

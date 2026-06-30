@@ -17,8 +17,22 @@ export function ConsumerHome({ vm }: { vm: VM }) {
           </div>
           <span style={{ font: "800 19px 'Archivo'", letterSpacing: '-.02em' }}>AutoCheck</span>
         </div>
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#DCE5E0', display: 'flex', alignItems: 'center', justifyContent: 'center', font: "700 14px 'Manrope'", color: 'var(--ac)' }}>
-          D
+        <div
+          onClick={vm.openProfile}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: vm.isSignedIn ? 'var(--ac)' : '#DCE5E0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            font: "700 14px 'Manrope'",
+            color: vm.isSignedIn ? '#fff' : 'var(--ac)',
+            cursor: 'pointer',
+          }}
+        >
+          {vm.profileInitial}
         </div>
       </div>
 
@@ -141,6 +155,12 @@ export function BrandHome({ vm }: { vm: VM }) {
       style={{ position: 'absolute', inset: 0, padding: '0 0 18px', overflowY: 'auto', color: '#0F1A14' }}
     >
       <div style={{ background: 'linear-gradient(150deg,var(--ac),var(--acd))', padding: '64px 22px 24px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+        <div
+          onClick={vm.openProfile}
+          style={{ position: 'absolute', top: 38, right: 20, width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: "700 13px 'Manrope'", color: '#fff', cursor: 'pointer', zIndex: 1 }}
+        >
+          {vm.profileInitial}
+        </div>
         <svg style={{ position: 'absolute', right: -30, top: -20, opacity: 0.12 }} width="190" height="190" viewBox="0 0 24 24" fill="#fff">
           <path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11m-14 0h14m-14 0a2 2 0 00-2 2v3h2m14-5a2 2 0 012 2v3h-2M7 16h10M6 16v2m12-2v2" />
         </svg>

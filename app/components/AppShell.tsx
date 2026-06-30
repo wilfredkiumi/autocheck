@@ -7,6 +7,7 @@ import { ConsumerHome, BrandHome } from '@/components/screens/Home'
 import { Detail, Issue, Slot, Done } from '@/components/screens/Booking'
 import { Location, Discovery, Roadside, RoadDone } from '@/components/screens/Away'
 import { BookSheet } from '@/components/BookSheet'
+import { ProfileSheet } from '@/components/ProfileSheet'
 
 // The consumer (driver) app. A driver lands here from a garage's QR code, its
 // wa.me link, or a branded link (/ for AutoCheck, /juma-auto, /westgate). There
@@ -61,6 +62,7 @@ export default function App({
         {vm.isSlot && <Slot vm={vm} />}
         {vm.isDone && <Done vm={vm} />}
         <BookSheet vm={vm} />
+        <ProfileSheet vm={vm} />
       </main>
     </div>
   )
