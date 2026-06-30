@@ -192,7 +192,7 @@ export function Issue({ vm }: { vm: VM }) {
         )}
         <div style={{ flex: 1 }}>
           <div style={{ font: "700 13px 'Manrope'", color: '#0F1A14' }}>{vm.aiBtnTitle}</div>
-          <div style={{ font: "400 12px 'Manrope'", color: '#5A645E' }}>Plain words → clear symptoms for the technician</div>
+          <div style={{ font: "400 12px 'Manrope'", color: '#5A645E' }}>AI helps you put it into words clearly</div>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M9 6l6 6-6 6" stroke="var(--ac)" strokeWidth="2" strokeLinecap="round" />
@@ -200,7 +200,7 @@ export function Issue({ vm }: { vm: VM }) {
       </div>
       {vm.aiDone && (
         <div style={{ marginTop: 11, background: '#fff', border: '1px solid var(--ac)', borderRadius: 13, padding: 13 }}>
-          <div style={{ font: "700 11px 'Space Mono'", color: 'var(--acd)', letterSpacing: '.06em', marginBottom: 6 }}>STRUCTURED FOR TECHNICIAN</div>
+          <div style={{ font: "700 11px 'Space Mono'", color: 'var(--acd)', letterSpacing: '.06em', marginBottom: 6 }}>YOUR DESCRIPTION</div>
           <div style={{ font: "400 13px 'Manrope'", color: '#33403A', lineHeight: 1.55 }}>{vm.aiText}</div>
         </div>
       )}

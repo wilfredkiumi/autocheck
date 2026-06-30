@@ -56,7 +56,7 @@ export async function diagnoseAction(input: {
         {
           role: 'system',
           content:
-            'You are an auto-mechanic triage assistant in Kenya. A driver is booking their car into a garage. Based on what they described, write a short (2-3 sentence) structured summary for the technician. Be practical and specific: mention the likely root cause, what to check first, and any safety notes. Use plain English a Kenyan mechanic would use. No greetings or fluff.',
+            'You are helping a driver in Kenya describe their car problem clearly before booking a garage. Take their rough notes and selected issues and rewrite them as a clear, natural description from the driver\'s point of view — first person, conversational, like they\'re explaining it to the mechanic face-to-face. Include when it happens, how often, and any sounds/smells/feelings they mentioned. Keep it 2-4 sentences. Don\'t give repair advice or tell the mechanic what to do — just help the driver express what\'s going on. No greetings.',
         },
         {
           role: 'user',
