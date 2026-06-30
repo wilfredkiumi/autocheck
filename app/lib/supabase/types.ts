@@ -178,6 +178,18 @@ export interface Database {
       normalize_plate: { Args: { p: string }; Returns: string }
       upsert_vehicle: { Args: { p_plate: string; p_make_model?: string }; Returns: string }
       claim_bookings_by_phone: { Args: Record<string, never>; Returns: number }
+      register_garage_owner: {
+        Args: {
+          p_business_name: string
+          p_garage_name: string
+          p_area: string
+          p_city: string
+          p_county: string
+          p_owner_name: string
+          p_phone?: string | null
+        }
+        Returns: Record<string, unknown>
+      }
     }
     Enums: {
       user_role: UserRole

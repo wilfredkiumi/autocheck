@@ -201,7 +201,7 @@ function confirm(conv: WaConversation): WaTurn {
   return {
     conversation: { ...conv, step: 'done' },
     outbound: {
-      body: `Booking confirmed 🎉\n${g} · ${conv.slot}${car}\nRef #AG-4821\n\nDrive straight in — no queue, no deposit. We'll WhatsApp you the moment your car is ready.`,
+      body: `Booking confirmed 🎉\n${g} · ${conv.slot}${car}\nRef #AG-4821\n\nDrive straight in — no queue, no deposit. We'll WhatsApp you the moment your car is ready.\n\nTrack your repairs: autocheck.co.ke`,
       garageBrief: `📋 New booking — ${sym}.${carBrief} Bay held: ${conv.slot}.`,
       terminal: true,
     },

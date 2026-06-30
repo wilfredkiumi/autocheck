@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSessionContext } from '@/lib/db/profiles'
 import { listBookings, type BookingRow } from '@/lib/db/bookings'
+import { getGarageStats, type GarageStats } from '@/lib/db/analytics'
 import { confirmBookingAction } from './actions'
 import { SignOutButton } from '@/components/SignOutButton'
 
@@ -18,7 +19,7 @@ export default async function DashboardPage() {
   const accentSoft = ctx.tenant?.accent_soft ?? '#EAF3EE'
   const accentDark = ctx.tenant?.accent_dark ?? '#0A6A44'
 
-  const bookings = await listBookings()
+  const [bookings, stats] = await Promise.all([listBookings(), getGarageStats()])
   const newCount = bookings.filter((b) => b.status === 'new').length
 
   return (
@@ -68,10 +69,85 @@ export default async function DashboardPage() {
       </header>
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '20px 16px' }}>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
-          <Stat label="Today’s bookings" value={String(bookings.length)} accent={accentDark} />
-          <Stat label="Awaiting confirm" value={String(newCount)} accent={accentDark} />
+        {/* Key stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
+          <Stat label="Today" value={String(stats.today)} accent={accentDark} />
+          <Stat label="This week" value={String(stats.thisWeek)} accent={accentDark} />
+          <Stat label="This month" value={String(stats.thisMonth)} accent={accentDark} />
+          <Stat label="Avg / day" value={String(stats.avgPerDay)} accent={accentDark} />
         </div>
+
+        {/* Channel + status breakdown */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#7B857F', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>
+              Booking channels
+            </div>
+            <ChannelBar app={stats.byChannel.app} whatsapp={stats.byChannel.whatsapp} accent={accent} />
+          </div>
+          <div style={cardStyle}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#7B857F', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>
+              Awaiting action
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: newCount > 0 ? '#C2410C' : accentDark }}>{newCount}</div>
+            <div style={{ fontSize: 12, color: '#7B857F' }}>
+              {stats.completed} completed · {stats.cancelled} cancelled
+            </div>
+          </div>
+        </div>
+
+        {/* Top issues */}
+        {stats.topIssues.length > 0 && (
+          <div style={{ ...cardStyle, marginBottom: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#7B857F', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>
+              Common issues (last 30 days)
+            </div>
+            {stats.topIssues.map((issue) => (
+              <div key={issue.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#33403A' }}>{issue.label}</div>
+                <div style={{ width: 80, height: 6, background: '#F2F5F3', borderRadius: 3, overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${Math.round((issue.count / (stats.topIssues[0]?.count || 1)) * 100)}%`,
+                      background: accent,
+                      borderRadius: 3,
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#7B857F', minWidth: 20, textAlign: 'right' }}>{issue.count}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Daily activity chart */}
+        {stats.dailyCounts.length > 0 && (
+          <div style={{ ...cardStyle, marginBottom: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#7B857F', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>
+              Daily bookings (last 30 days)
+            </div>
+            <div style={{ display: 'flex', alignItems: 'end', gap: 2, height: 60 }}>
+              {stats.dailyCounts.map((d) => {
+                const max = Math.max(...stats.dailyCounts.map((x) => x.count), 1)
+                return (
+                  <div
+                    key={d.date}
+                    title={`${d.date}: ${d.count}`}
+                    style={{
+                      flex: 1,
+                      background: accent,
+                      borderRadius: '2px 2px 0 0',
+                      minHeight: 2,
+                      height: `${Math.round((d.count / max) * 100)}%`,
+                      opacity: 0.7,
+                    }}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <h2 style={{ fontSize: 14, fontWeight: 800, color: '#33403A', margin: '0 0 10px' }}>
           Bookings
@@ -99,19 +175,35 @@ export default async function DashboardPage() {
   )
 }
 
+const cardStyle: React.CSSProperties = {
+  flex: 1,
+  background: '#fff',
+  border: '1px solid #E2E8E5',
+  borderRadius: 14,
+  padding: '14px 16px',
+}
+
 function Stat({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
-    <div
-      style={{
-        flex: 1,
-        background: '#fff',
-        border: '1px solid #E2E8E5',
-        borderRadius: 14,
-        padding: '14px 16px',
-      }}
-    >
-      <div style={{ fontSize: 24, fontWeight: 800, color: accent }}>{value}</div>
-      <div style={{ fontSize: 12, color: '#7B857F' }}>{label}</div>
+    <div style={cardStyle}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: accent }}>{value}</div>
+      <div style={{ fontSize: 11, color: '#7B857F' }}>{label}</div>
+    </div>
+  )
+}
+
+function ChannelBar({ app, whatsapp, accent }: { app: number; whatsapp: number; accent: string }) {
+  const total = app + whatsapp || 1
+  return (
+    <div>
+      <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 8 }}>
+        <div style={{ width: `${(whatsapp / total) * 100}%`, background: '#25D366' }} />
+        <div style={{ width: `${(app / total) * 100}%`, background: accent }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+        <span style={{ color: '#25D366', fontWeight: 700 }}>WhatsApp {whatsapp}</span>
+        <span style={{ color: accent, fontWeight: 700 }}>App {app}</span>
+      </div>
     </div>
   )
 }

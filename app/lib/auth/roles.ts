@@ -20,7 +20,7 @@ const PROTECTED: { prefix: string; roles: UserRole[] }[] = [
 ]
 
 // Public paths that never require a session (the open booking funnel + auth).
-const PUBLIC_PREFIXES = ['/login', '/auth']
+const PUBLIC_PREFIXES = ['/login', '/auth', '/register']
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))

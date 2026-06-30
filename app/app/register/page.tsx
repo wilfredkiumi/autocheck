@@ -1,11 +1,9 @@
 import { isSupabaseConfigured } from '@/lib/supabase/env'
-import { LoginForm } from './login-form'
+import { RegisterForm } from './register-form'
 
-// Public sign-in page. Phone OTP (WhatsApp primary, SMS fallback) is the driver
-// path; email / Google are offered for garage-owner and platform-admin logins.
-export const metadata = { title: 'Sign in · AutoCheck' }
+export const metadata = { title: 'Register your garage · AutoCheck' }
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <main
       style={{
@@ -20,7 +18,7 @@ export default function LoginPage() {
       <div
         style={{
           width: '100%',
-          maxWidth: 380,
+          maxWidth: 420,
           background: '#fff',
           borderRadius: 20,
           border: '1px solid #E2E8E5',
@@ -46,21 +44,14 @@ export default function LoginPage() {
           <div style={{ fontWeight: 800, fontSize: 18, color: '#0F1A14' }}>AutoCheck</div>
         </div>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F1A14', margin: '0 0 4px' }}>
-          Sign in
+          Register your garage
         </h1>
         <p style={{ fontSize: 14, color: '#7B857F', margin: '0 0 20px' }}>
-          Book your car in — with a garage you already trust.
+          Get listed and start receiving bookings from drivers near you.
         </p>
 
         {isSupabaseConfigured ? (
-          <>
-            <LoginForm />
-            <div style={{ textAlign: 'center', marginTop: 16 }}>
-              <a href="/register" style={{ fontSize: 13, fontWeight: 600, color: '#0E7C50', textDecoration: 'none' }}>
-                Own a garage? Register here
-              </a>
-            </div>
-          </>
+          <RegisterForm />
         ) : (
           <div
             style={{
@@ -73,10 +64,7 @@ export default function LoginPage() {
               lineHeight: 1.5,
             }}
           >
-            Authentication isn’t configured yet. Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
-            <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> (see{' '}
-            <code>docs/supabase-setup.md</code>) to enable sign-in. The demo app runs
-            without it.
+            Authentication is not configured. Set Supabase environment variables to enable registration.
           </div>
         )}
       </div>
