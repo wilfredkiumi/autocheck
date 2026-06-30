@@ -1,11 +1,12 @@
 import 'server-only'
 
-import { createAnonClient } from '@/lib/supabase/server'
+import { createAnonClient, createClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import {
   STATIC_APP_DATA,
   TENANT_SLUGS,
   type AppData,
+  type DriverContext,
   type Garage as DemoGarage,
   type TenantKey,
   type Theme,
@@ -126,4 +127,37 @@ function dedupeBy<T>(items: T[], key: (item: T) => string): T[] {
     }
   }
   return out
+}
+
+// Returns the signed-in driver's name and registered plates so the BookSheet
+// can pre-fill on return visits. Returns null when there is no session.
+export async function loadDriverContext(): Promise<DriverContext | null> {
+  if (!isSupabaseConfigured) return null
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const [profileRes, vehiclesRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .returns<{ full_name: string | null }[]>()
+        .maybeSingle(),
+      supabase
+        .from('vehicles')
+        .select('plate')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
+        .returns<{ plate: string }[]>(),
+    ])
+
+    const name = profileRes.data?.full_name ?? ''
+    const plates = (vehiclesRes.data ?? []).map((v) => v.plate)
+    if (!name && !plates.length) return null
+    return { name, plates }
+  } catch {
+    return null
+  }
 }

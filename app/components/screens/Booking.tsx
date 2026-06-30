@@ -294,7 +294,7 @@ export function Slot({ vm }: { vm: VM }) {
             href="/login"
             style={{ display: 'block', textDecoration: 'none', background: '#FBEAE1', border: '1px solid #F2D2C2', color: '#9A330A', borderRadius: 11, padding: '10px 12px', marginBottom: 9, font: "600 12.5px 'Manrope'", lineHeight: 1.4 }}
           >
-            Sign in to hold your bay — tap to continue with your phone number, then come back.
+            Verify your phone via WhatsApp to lock this car to your account and hold your bay.
           </a>
         )}
         {vm.bookingError && (
@@ -332,11 +332,24 @@ export function Done({ vm }: { vm: VM }) {
           </div>
         )}
       </div>
-      <div style={{ background: 'var(--acs)', borderRadius: 14, padding: '13px 15px', marginTop: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }}>
-          <path d="M5 12.5l4 4L19 7" stroke="var(--acd)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <div style={{ font: "500 12px 'Manrope'", color: 'var(--acd)' }}>Drive straight in — no queue. They've seen your issue already.</div>
+      <div style={{ background: 'var(--acs)', borderRadius: 14, padding: '13px 15px', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }}>
+            <path d="M5 12.5l4 4L19 7" stroke="var(--acd)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div style={{ font: "500 12px 'Manrope'", color: 'var(--acd)' }}>Drive straight in — no queue. They've seen your issue already.</div>
+        </div>
+        {vm.plate && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }}>
+              <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke="var(--acd)" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M9.5 12l1.8 1.8L15 10" stroke="var(--acd)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div style={{ font: "500 12px 'Manrope'", color: 'var(--acd)' }}>
+              {vm.plate} is linked to your verified account — track all bookings for this car.
+            </div>
+          </div>
+        )}
       </div>
       <div style={{ background: '#fff', border: '1px solid #E2E8E5', borderRadius: 14, padding: 16, marginTop: 13 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>

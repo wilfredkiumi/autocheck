@@ -18,12 +18,38 @@ export function BookSheet({ vm }: { vm: VM }) {
         style={{ position: 'relative', background: '#fff', borderRadius: '22px 22px 0 0', padding: '20px 20px 26px', boxShadow: '0 -10px 40px rgba(15,40,30,.18)' }}
       >
         <div style={{ width: 38, height: 4, borderRadius: 2, background: '#DCE5E0', margin: '0 auto 16px' }} />
-        <div style={{ font: "800 19px 'Archivo'", color: '#0F1A14' }}>Book your car in</div>
+        <div style={{ font: "800 19px 'Archivo'", color: '#0F1A14' }}>
+          {vm.isReturningDriver ? 'Book your car in' : 'Register & book'}
+        </div>
         <div style={{ font: "400 13px 'Manrope'", color: '#7B857F', marginTop: 3 }}>
-          {vm.sheetGarageName} · finish in the app or on WhatsApp
+          {vm.isReturningDriver
+            ? `Welcome back — ${vm.sheetGarageName}`
+            : `${vm.sheetGarageName} · verify via WhatsApp to lock the car to your account`}
         </div>
 
-        <label style={{ display: 'block', marginTop: 16 }}>
+        {vm.isReturningDriver && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, background: 'var(--acs)', borderRadius: 12, padding: '11px 14px' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }}>
+              <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke="var(--acd)" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M9.5 12l1.8 1.8L15 10" stroke="var(--acd)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div style={{ font: "600 13px 'Manrope'", color: 'var(--acd)' }}>
+              Verified · {vm.driverName}{vm.plate ? ` · ${vm.plate}` : ''}
+            </div>
+          </div>
+        )}
+
+        <label style={{ display: 'block', marginTop: vm.isReturningDriver ? 12 : 16 }}>
+          <span style={{ font: "700 12px 'Manrope'", color: '#33403A' }}>Your name</span>
+          <input
+            value={vm.driverName}
+            onChange={vm.onDriverName}
+            placeholder="e.g. Grace Wanjiku"
+            style={{ marginTop: 6, width: '100%', boxSizing: 'border-box', border: '1px solid #D7DEDA', borderRadius: 12, padding: '13px 14px', font: "400 15px 'Manrope'", outlineColor: 'var(--ac)' }}
+          />
+        </label>
+
+        <label style={{ display: 'block', marginTop: 12 }}>
           <span style={{ font: "700 12px 'Manrope'", color: '#33403A' }}>Car number plate</span>
           <input
             value={vm.plate}
@@ -32,11 +58,13 @@ export function BookSheet({ vm }: { vm: VM }) {
             autoCapitalize="characters"
             style={{ marginTop: 6, width: '100%', boxSizing: 'border-box', border: '1px solid #D7DEDA', borderRadius: 12, padding: '13px 14px', font: "700 16px 'Space Mono'", letterSpacing: '.04em', textTransform: 'uppercase', outlineColor: 'var(--ac)' }}
           />
-          <span style={{ font: "400 11px 'Manrope'", color: '#9AA6A0', marginTop: 6, display: 'block' }}>
-            Optional for WhatsApp — the bot will ask. Needed to finish in the app.
-            We book against the car, so anyone you send with it can be served.
-          </span>
         </label>
+
+        {!vm.isReturningDriver && (
+          <div style={{ font: "400 11px 'Manrope'", color: '#9AA6A0', marginTop: 8, lineHeight: 1.5 }}>
+            We&apos;ll verify your phone via WhatsApp and link this car to your account so you can track every booking.
+          </div>
+        )}
 
         {/* WhatsApp is the primary path — most drivers are already there. Carries
             the plate in the link if entered, so they don't re-type it. */}
@@ -57,7 +85,7 @@ export function BookSheet({ vm }: { vm: VM }) {
           disabled={!vm.canBook}
           style={{ width: '100%', marginTop: 10, background: '#fff', border: `1.5px solid ${vm.canBook ? 'var(--ac)' : '#E2E8E5'}`, borderRadius: 14, padding: 14, font: "700 14px 'Manrope'", cursor: vm.canBook ? 'pointer' : 'default', color: vm.canBook ? 'var(--acd)' : '#B0B7B3' }}
         >
-          {vm.canBook ? 'Finish here in the app →' : 'Enter plate to finish in the app'}
+          {vm.canBook ? 'Continue in the app →' : 'Enter your name & plate to continue'}
         </button>
 
         <div onClick={vm.closeSheet} style={{ textAlign: 'center', marginTop: 12, font: "600 13px 'Manrope'", color: '#7B857F', cursor: 'pointer', padding: 6 }}>

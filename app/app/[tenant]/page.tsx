@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import { TENANT_SLUGS } from '@/lib/data'
-import { loadAppData } from '@/lib/db/catalog'
+import { loadAppData, loadDriverContext } from '@/lib/db/catalog'
 
 export const revalidate = 60
 
@@ -16,6 +16,6 @@ export function generateStaticParams() {
 export default async function TenantPage({ params }: { params: { tenant: string } }) {
   const key = TENANT_SLUGS[params.tenant.toLowerCase()]
   if (!key) notFound()
-  const data = await loadAppData()
-  return <AppShell initialTenant={key} data={data} />
+  const [data, driver] = await Promise.all([loadAppData(), loadDriverContext()])
+  return <AppShell initialTenant={key} data={{ ...data, driver: driver ?? undefined }} />
 }

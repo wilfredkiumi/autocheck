@@ -14,6 +14,7 @@ export type CreateBookingInput = {
   fulfilment?: Fulfilment | null
   hasPhoto?: boolean
   plate?: string
+  driverName?: string
 }
 
 export type CreateBookingResult =
@@ -41,6 +42,16 @@ export async function createBookingAction(
     .maybeSingle()
   if (!garage) return { ok: false, error: 'That garage could not be found.' }
 
+  // If the driver supplied their name, persist it on their profile so future
+  // bookings (and the garage owner's view) show a real name, not just a phone.
+  const driverName = (input.driverName || '').trim()
+  if (driverName) {
+    await supabase
+      .from('profiles')
+      .update({ full_name: driverName })
+      .eq('id', user.id)
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, phone')
@@ -49,12 +60,22 @@ export async function createBookingAction(
     .maybeSingle()
   const customerName = profile?.full_name || profile?.phone || 'Driver'
 
-  // The car is the booking's identity — get-or-create the vehicle by plate.
+  // The car is the booking's identity — get-or-create the vehicle by plate,
+  // then soft-lock it to this driver (owner_id). The driver can always see
+  // bookings for their cars; other drivers can still book the same plate
+  // (e.g. a spouse or hired driver) — we record ownership, not exclusivity.
   let vehicleId: string | null = null
   const plate = (input.plate || '').trim()
   if (plate) {
     const { data } = await supabase.rpc('upsert_vehicle', { p_plate: plate })
     vehicleId = (data as string | null) ?? null
+    if (vehicleId) {
+      await supabase
+        .from('vehicles')
+        .update({ owner_id: user.id })
+        .eq('id', vehicleId)
+        .is('owner_id', null)
+    }
   }
 
   const { data: booking, error: bookingErr } = await supabase

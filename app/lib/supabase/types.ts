@@ -127,6 +127,7 @@ export type Vehicle = {
   id: string
   plate: string
   make_model: string | null
+  owner_id: string | null
   created_at: string
 }
 

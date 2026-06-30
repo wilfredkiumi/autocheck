@@ -339,12 +339,18 @@ export const BOOKINGS: BookingDef[] = [
 // these are the static arrays above; with Supabase configured, the server
 // loader (lib/db/catalog.ts) supplies the same shapes from Postgres. Everything
 // else (SLOTS, ZONES, ISSUE_MINS, DUR_PRESETS, the sample BOOKINGS) stays static.
+export interface DriverContext {
+  name: string
+  plates: string[]
+}
+
 export interface AppData {
   THEMES: Record<TenantKey, Theme>
   GARAGES: Garage[]
   NYERI: Garage[]
   ISSUES: string[]
   SERVICES: ServiceDef[]
+  driver?: DriverContext
 }
 
 export const STATIC_APP_DATA: AppData = { THEMES, GARAGES, NYERI, ISSUES, SERVICES }

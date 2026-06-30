@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { createBookingAction } from '@/lib/actions/booking'
+import { diagnoseAction } from '@/lib/actions/diagnose'
 import { resolveWaTarget } from './wa-link'
 import {
   BOOKINGS,
@@ -53,6 +54,7 @@ interface State {
   needSignIn: boolean
   bookingError: string | null
   plate: string
+  driverName: string
   sheetOpen: boolean
   sheetNext: number
   durations: Record<string, number>
@@ -97,6 +99,7 @@ const INITIAL: State = {
   needSignIn: false,
   bookingError: null,
   plate: '',
+  driverName: '',
   sheetOpen: false,
   sheetNext: 1,
   durations: {},
@@ -136,10 +139,6 @@ interface WaMessage {
   slot?: string
   deposit?: string
 }
-
-// Illustrative AI fallback (Claude API kept out of scope per build decision).
-const AI_FALLBACK =
-  'Likely front brake-pad wear with a possible wheel-alignment pull. Check front pads and discs, and test alignment on arrival.'
 
 export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP_DATA) {
   // Dynamic, tenant-scoped content — static demo arrays by default, or the
@@ -256,11 +255,17 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
 
   const runAI = async () => {
     if (st.aiLoading) return
-    patch({ aiLoading: true, aiDone: false })
-    // Illustrative only — show the canned technician summary after a beat.
-    await new Promise((r) => setTimeout(r, 900))
-    const clean = AI_FALLBACK
-    patch({ aiLoading: false, aiDone: true, aiText: clean })
+    patch({ aiLoading: true, aiDone: false, aiText: '' })
+    const res = await diagnoseAction({
+      issues: st.issues,
+      note: st.note,
+      plate: st.plate,
+    })
+    if (res.ok) {
+      patch({ aiLoading: false, aiDone: true, aiText: res.text })
+    } else {
+      patch({ aiLoading: false, aiDone: false, aiText: res.error })
+    }
   }
 
   const onMapTap = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -309,6 +314,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       fulfilment: st.fulfil,
       hasPhoto: st.photos.length > 0,
       plate: st.plate,
+      driverName: st.driverName,
     })
     if (res.ok) patch({ submitting: false, bookingRef: res.ref, s: 4 })
     else if (res.needAuth) patch({ submitting: false, needSignIn: true })
@@ -560,8 +566,13 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
   // Tapping a garage opens the "how do you want to book?" sheet (plate + channel)
   // rather than diving straight into the funnel. sheetNext is the app screen to
   // resume on if they choose "Continue in the app".
-  const openSheet = (p: Partial<State>) =>
-    patch({ ...p, sheetOpen: true, bookingError: null, needSignIn: false })
+  // For returning drivers, pre-fill name and last-used plate from driver context.
+  const openSheet = (p: Partial<State>) => {
+    const prefill: Partial<State> = {}
+    if (data.driver && !st.driverName) prefill.driverName = data.driver.name
+    if (data.driver?.plates?.length && !st.plate) prefill.plate = data.driver.plates[0]
+    patch({ ...prefill, ...p, sheetOpen: true, bookingError: null, needSignIn: false })
+  }
   const garages = GARAGES.map((g, i) => ({
     ...decorate(g),
     onClick: () => openSheet({ away: null, g: i, sheetNext: 1 }),
@@ -820,11 +831,15 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
 
     // booking sheet (plate + channel chooser)
     sheetOpen: st.sheetOpen,
+    isReturningDriver: !!data.driver?.name,
     sheetGarageName: sheetGarage?.name ?? '',
     plate: st.plate,
     onPlate: (e: React.ChangeEvent<HTMLInputElement>) =>
       patch({ plate: e.target.value.toUpperCase() }),
-    canBook: st.plate.trim().length >= 4,
+    driverName: st.driverName,
+    onDriverName: (e: React.ChangeEvent<HTMLInputElement>) =>
+      patch({ driverName: e.target.value }),
+    canBook: st.plate.trim().length >= 4 && st.driverName.trim().length >= 2,
     openBrandSheet: () => openSheet({ sheetNext: 2 }),
     closeSheet: () => patch({ sheetOpen: false }),
     continueInApp: () => patch({ sheetOpen: false, s: st.sheetNext }),
@@ -908,6 +923,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         needSignIn: false,
         bookingError: null,
         plate: '',
+        driverName: '',
         sheetOpen: false,
       }),
   }
