@@ -51,9 +51,10 @@ interface State {
   fulfil: 'wait' | 'drop' | null
   submitting: boolean
   bookingRef: string | null
-  needSignIn: boolean
+  isGuestBooking: boolean
   bookingError: string | null
   plate: string
+  carModel: string
   driverName: string
   sheetOpen: boolean
   sheetNext: number
@@ -97,9 +98,10 @@ const INITIAL: State = {
   fulfil: null,
   submitting: false,
   bookingRef: null,
-  needSignIn: false,
+  isGuestBooking: false,
   bookingError: null,
   plate: '',
+  carModel: '',
   driverName: '',
   profileOpen: false,
   sheetOpen: false,
@@ -306,7 +308,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       patch({ s: 4 })
       return
     }
-    patch({ submitting: true, bookingError: null, needSignIn: false })
+    patch({ submitting: true, bookingError: null })
     const slotLabel = SLOTS[st.slot] ? SLOTS[st.slot].day + ' · ' + SLOTS[st.slot].time : undefined
     const res = await createBookingAction({
       garageId,
@@ -316,10 +318,10 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       fulfilment: st.fulfil,
       hasPhoto: st.photos.length > 0,
       plate: st.plate,
+      carModel: st.carModel,
       driverName: st.driverName,
     })
-    if (res.ok) patch({ submitting: false, bookingRef: res.ref, s: 4 })
-    else if (res.needAuth) patch({ submitting: false, needSignIn: true })
+    if (res.ok) patch({ submitting: false, bookingRef: res.ref, isGuestBooking: res.isGuest, s: 4 })
     else patch({ submitting: false, bookingError: res.error })
   }
 
@@ -573,7 +575,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     const prefill: Partial<State> = {}
     if (data.driver && !st.driverName) prefill.driverName = data.driver.name
     if (data.driver?.plates?.length && !st.plate) prefill.plate = data.driver.plates[0]
-    patch({ ...prefill, ...p, sheetOpen: true, bookingError: null, needSignIn: false })
+    patch({ ...prefill, ...p, sheetOpen: true, bookingError: null })
   }
   const garages = GARAGES.map((g, i) => ({
     ...decorate(g),
@@ -847,6 +849,9 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     plate: st.plate,
     onPlate: (e: React.ChangeEvent<HTMLInputElement>) =>
       patch({ plate: e.target.value.toUpperCase() }),
+    carModel: st.carModel,
+    onCarModel: (e: React.ChangeEvent<HTMLInputElement>) =>
+      patch({ carModel: e.target.value }),
     driverName: st.driverName,
     onDriverName: (e: React.ChangeEvent<HTMLInputElement>) =>
       patch({ driverName: e.target.value }),
@@ -861,7 +866,8 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     submitBooking: () => submitBooking(),
     submitting: st.submitting,
     bookingRef: st.bookingRef,
-    needSignIn: st.needSignIn,
+    isGuestBooking: st.isGuestBooking,
+    signUpHref: `/login?name=${encodeURIComponent(st.driverName)}&plate=${encodeURIComponent(st.plate)}${st.carModel ? `&model=${encodeURIComponent(st.carModel)}` : ''}`,
     bookingError: st.bookingError,
     track: trackRows(T.accent),
     doneBack: wl ? 'Done' : 'Back to your garages',
@@ -931,9 +937,10 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         photos: [],
         voice: null,
         bookingRef: null,
-        needSignIn: false,
+        isGuestBooking: false,
         bookingError: null,
         plate: '',
+        carModel: '',
         driverName: '',
         sheetOpen: false,
       }),

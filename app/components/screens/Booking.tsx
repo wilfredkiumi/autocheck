@@ -289,14 +289,6 @@ export function Slot({ vm }: { vm: VM }) {
       </div>
 
       <div style={bottomCta}>
-        {vm.needSignIn && (
-          <a
-            href="/login"
-            style={{ display: 'block', textDecoration: 'none', background: '#FBEAE1', border: '1px solid #F2D2C2', color: '#9A330A', borderRadius: 11, padding: '10px 12px', marginBottom: 9, font: "600 12.5px 'Manrope'", lineHeight: 1.4 }}
-          >
-            Verify your phone via WhatsApp to lock this car to your account and hold your bay.
-          </a>
-        )}
         {vm.bookingError && (
           <div style={{ background: '#FBEAE1', border: '1px solid #F2D2C2', color: '#9A330A', borderRadius: 11, padding: '10px 12px', marginBottom: 9, font: "600 12.5px 'Manrope'", lineHeight: 1.4 }}>
             {vm.bookingError}
@@ -324,7 +316,7 @@ export function Done({ vm }: { vm: VM }) {
         </div>
         <div style={{ font: "800 23px 'Archivo'" }}>Your bay is reserved</div>
         <div style={{ font: "400 13px 'Manrope'", color: '#7B857F', marginTop: 4 }}>
-          {vm.g.name} · {vm.slotLabel}{vm.plate ? ` · ${vm.plate}` : ''}
+          {vm.g.name} · {vm.slotLabel}{vm.plate ? ` · ${vm.plate}` : ''}{vm.carModel ? ` · ${vm.carModel}` : ''}
         </div>
         {vm.bookingRef && (
           <div style={{ display: 'inline-block', marginTop: 8, font: "700 12px 'Space Mono'", color: 'var(--acd)', background: 'var(--acs)', borderRadius: 999, padding: '4px 12px' }}>
@@ -339,7 +331,7 @@ export function Done({ vm }: { vm: VM }) {
           </svg>
           <div style={{ font: "500 12px 'Manrope'", color: 'var(--acd)' }}>Drive straight in — no queue. They've seen your issue already.</div>
         </div>
-        {vm.plate && (
+        {vm.plate && !vm.isGuestBooking && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }}>
               <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke="var(--acd)" strokeWidth="2" strokeLinejoin="round" />
@@ -351,6 +343,31 @@ export function Done({ vm }: { vm: VM }) {
           </div>
         )}
       </div>
+
+      {vm.isGuestBooking && (
+        <a
+          href={vm.signUpHref}
+          style={{ display: 'block', textDecoration: 'none', background: '#fff', border: '1px solid var(--ac)', borderRadius: 14, padding: 16, marginTop: 13, cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--acs)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke="var(--ac)" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M9.5 12l1.8 1.8L15 10" stroke="var(--ac)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ font: "700 14px 'Manrope'", color: '#0F1A14' }}>Create your account</div>
+              <div style={{ font: "400 12px 'Manrope'", color: '#7B857F', marginTop: 2, lineHeight: 1.4 }}>
+                Verify via WhatsApp to get alerts, track bookings, and lock {vm.plate || 'your car'} to your account.
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flex: 'none' }}>
+              <path d="M9 6l6 6-6 6" stroke="var(--ac)" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        </a>
+      )}
       <div style={{ background: '#fff', border: '1px solid #E2E8E5', borderRadius: 14, padding: 16, marginTop: 13 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <span style={{ font: "700 11px 'Space Mono'", color: '#7B857F', letterSpacing: '.06em' }}>LIVE STATUS</span>

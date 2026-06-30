@@ -1,9 +1,9 @@
 'use server'
 
 // Driver-side booking write path. Creates a real booking row (visible to the
-// garage owner's dashboard) for the signed-in driver. RLS enforces that the
-// driver can only insert their own booking (driver_id = auth.uid()).
-import { createClient } from '@/lib/supabase/server'
+// garage owner's dashboard). Works for both signed-in and guest drivers — guest
+// bookings have driver_id = null and get linked when the driver verifies later.
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import type { Fulfilment } from '@/lib/supabase/types'
 
 export type CreateBookingInput = {
@@ -14,24 +14,26 @@ export type CreateBookingInput = {
   fulfilment?: Fulfilment | null
   hasPhoto?: boolean
   plate?: string
+  carModel?: string
   driverName?: string
 }
 
 export type CreateBookingResult =
-  | { ok: true; ref: string }
-  | { ok: false; needAuth?: boolean; error: string }
+  | { ok: true; ref: string; isGuest: boolean }
+  | { ok: false; error: string }
 
 export async function createBookingAction(
   input: CreateBookingInput,
 ): Promise<CreateBookingResult> {
-  const supabase = await createClient()
+  const authClient = await createClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { ok: false, needAuth: true, error: 'Sign in to hold your bay.' }
-  }
+  } = await authClient.auth.getUser()
+
+  // Use the authenticated client when signed in; service client for guest
+  // bookings so RLS doesn't block the insert.
+  const supabase = user ? authClient : createServiceClient()
 
   // Resolve the garage's tenant so the booking is correctly scoped.
   const { data: garage } = await supabase
@@ -42,34 +44,40 @@ export async function createBookingAction(
     .maybeSingle()
   if (!garage) return { ok: false, error: 'That garage could not be found.' }
 
-  // If the driver supplied their name, persist it on their profile so future
-  // bookings (and the garage owner's view) show a real name, not just a phone.
+  // If signed in, persist the driver's name and resolve their profile.
   const driverName = (input.driverName || '').trim()
-  if (driverName) {
-    await supabase
+  let customerName = driverName || 'Driver'
+  let customerPhone: string | null = null
+
+  if (user) {
+    if (driverName) {
+      await authClient
+        .from('profiles')
+        .update({ full_name: driverName })
+        .eq('id', user.id)
+    }
+    const { data: profile } = await authClient
       .from('profiles')
-      .update({ full_name: driverName })
+      .select('full_name, phone')
       .eq('id', user.id)
+      .returns<{ full_name: string | null; phone: string | null }[]>()
+      .maybeSingle()
+    customerName = profile?.full_name || driverName || profile?.phone || 'Driver'
+    customerPhone = profile?.phone ?? null
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, phone')
-    .eq('id', user.id)
-    .returns<{ full_name: string | null; phone: string | null }[]>()
-    .maybeSingle()
-  const customerName = profile?.full_name || profile?.phone || 'Driver'
-
   // The car is the booking's identity — get-or-create the vehicle by plate,
-  // then soft-lock it to this driver (owner_id). The driver can always see
-  // bookings for their cars; other drivers can still book the same plate
-  // (e.g. a spouse or hired driver) — we record ownership, not exclusivity.
+  // then soft-lock it to this driver (owner_id) if signed in.
   let vehicleId: string | null = null
   const plate = (input.plate || '').trim()
+  const carModel = (input.carModel || '').trim()
   if (plate) {
-    const { data } = await supabase.rpc('upsert_vehicle', { p_plate: plate })
+    const { data } = await supabase.rpc('upsert_vehicle', {
+      p_plate: plate,
+      ...(carModel ? { p_make_model: carModel } : {}),
+    })
     vehicleId = (data as string | null) ?? null
-    if (vehicleId) {
+    if (vehicleId && user) {
       await supabase
         .from('vehicles')
         .update({ owner_id: user.id })
@@ -83,9 +91,9 @@ export async function createBookingAction(
     .insert({
       tenant_id: garage.tenant_id,
       garage_id: garage.id,
-      driver_id: user.id,
+      driver_id: user?.id ?? null,
       customer_name: customerName,
-      customer_phone: profile?.phone ?? null,
+      customer_phone: customerPhone,
       vehicle: plate ? plate.toUpperCase() : null,
       vehicle_id: vehicleId,
       plate: plate ? plate.toUpperCase() : null,
@@ -109,5 +117,5 @@ export async function createBookingAction(
       .insert(input.issues.map((label) => ({ booking_id: booking.id, label })))
   }
 
-  return { ok: true, ref: 'AG-' + booking.id.slice(0, 4).toUpperCase() }
+  return { ok: true, ref: 'AG-' + booking.id.slice(0, 4).toUpperCase(), isGuest: !user }
 }

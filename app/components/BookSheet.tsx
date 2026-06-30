@@ -24,7 +24,7 @@ export function BookSheet({ vm }: { vm: VM }) {
         <div style={{ font: "400 13px 'Manrope'", color: '#7B857F', marginTop: 3 }}>
           {vm.isReturningDriver
             ? `Welcome back — ${vm.sheetGarageName}`
-            : `${vm.sheetGarageName} · verify via WhatsApp to lock the car to your account`}
+            : `${vm.sheetGarageName} · tell us about your car`}
         </div>
 
         {vm.isReturningDriver && (
@@ -60,11 +60,15 @@ export function BookSheet({ vm }: { vm: VM }) {
           />
         </label>
 
-        {!vm.isReturningDriver && (
-          <div style={{ font: "400 11px 'Manrope'", color: '#9AA6A0', marginTop: 8, lineHeight: 1.5 }}>
-            We&apos;ll verify your phone via WhatsApp and link this car to your account so you can track every booking.
-          </div>
-        )}
+        <label style={{ display: 'block', marginTop: 12 }}>
+          <span style={{ font: "700 12px 'Manrope'", color: '#33403A' }}>Car make & model</span>
+          <input
+            value={vm.carModel}
+            onChange={vm.onCarModel}
+            placeholder="e.g. Toyota Premio"
+            style={{ marginTop: 6, width: '100%', boxSizing: 'border-box', border: '1px solid #D7DEDA', borderRadius: 12, padding: '13px 14px', font: "400 15px 'Manrope'", outlineColor: 'var(--ac)' }}
+          />
+        </label>
 
         {/* WhatsApp is the primary path — most drivers are already there. Carries
             the plate in the link if entered, so they don't re-type it. */}
