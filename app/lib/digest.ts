@@ -15,6 +15,7 @@ function getClient(): OpenAI | null {
 interface TenantDigestData {
   tenantName: string
   ownerPhone: string
+  bays: number
   total: number
   completed: number
   cancelled: number
@@ -22,6 +23,8 @@ interface TenantDigestData {
   topIssues: { label: string; count: number }[]
   busiestDay: string | null
   slowestDay: string | null
+  estimatedHours: number
+  bayUtilisation: number // percentage
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -45,7 +48,7 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; skipped: numb
 
   if (!owners?.length) return { sent: 0, skipped: 0 }
 
-  // Get tenant names
+  // Get tenant names + garage bays
   const tenantIds = [...new Set(owners.map((o) => o.tenant_id))]
   const { data: tenants } = await supabase
     .from('tenants')
@@ -54,6 +57,28 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; skipped: numb
     .returns<{ id: string; name: string }[]>()
   const tenantNames: Record<string, string> = {}
   for (const t of tenants ?? []) tenantNames[t.id] = t.name
+
+  const { data: garages } = await supabase
+    .from('garages')
+    .select('tenant_id, bays_total')
+    .in('tenant_id', tenantIds)
+    .returns<{ tenant_id: string; bays_total: number }[]>()
+  const tenantBays: Record<string, number> = {}
+  for (const g of garages ?? []) {
+    tenantBays[g.tenant_id] = (tenantBays[g.tenant_id] || 0) + g.bays_total
+  }
+
+  // Issue catalog with est_mins (for estimating bay hours)
+  const { data: issueCatalog } = await supabase
+    .from('issues')
+    .select('tenant_id, label, est_mins')
+    .in('tenant_id', tenantIds)
+    .returns<{ tenant_id: string; label: string; est_mins: number }[]>()
+  const issueMinutes: Record<string, Record<string, number>> = {}
+  for (const ic of issueCatalog ?? []) {
+    if (!issueMinutes[ic.tenant_id]) issueMinutes[ic.tenant_id] = {}
+    issueMinutes[ic.tenant_id][ic.label] = ic.est_mins
+  }
 
   // Last 7 days of bookings
   const weekAgo = new Date()
@@ -104,9 +129,28 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; skipped: numb
     const busiestDay = dayEntries.length > 0 ? DAY_NAMES[dayEntries[0].day] : null
     const slowestDay = dayEntries.length > 1 ? DAY_NAMES[dayEntries[dayEntries.length - 1].day] : null
 
+    // Estimate total bay hours from issue catalog
+    const tenantIssueMinutes = issueMinutes[owner.tenant_id] || {}
+    let totalMins = 0
+    for (const i of ti) {
+      totalMins += tenantIssueMinutes[i.label] || 60 // default 1 hour if unknown
+    }
+    // Bookings without issues get a default 60 min estimate
+    const bookingsWithIssues = new Set(ti.map((i) => i.booking_id))
+    for (const b of tb) {
+      if (!bookingsWithIssues.has(b.id)) totalMins += 60
+    }
+    const estimatedHours = Math.round((totalMins / 60) * 10) / 10
+
+    // Bay utilisation: estimated hours / available bay-hours (bays x 8hrs x 6 working days)
+    const bays = tenantBays[owner.tenant_id] || 4
+    const availableHours = bays * 8 * 6 // 6 working days, 8 hours each
+    const bayUtilisation = Math.round((estimatedHours / availableHours) * 100)
+
     tenantData[owner.tenant_id] = {
       tenantName: tenantNames[owner.tenant_id] || 'Your garage',
       ownerPhone: owner.phone.replace(/\+/g, ''),
+      bays,
       total: tb.length,
       completed: tb.filter((b) => b.status === 'collected' || b.status === 'ready').length,
       cancelled: tb.filter((b) => b.status === 'cancelled').length,
@@ -117,6 +161,8 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; skipped: numb
       topIssues,
       busiestDay,
       slowestDay,
+      estimatedHours,
+      bayUtilisation,
     }
   }
 
@@ -151,7 +197,7 @@ async function generateDigestMessage(data: TenantDigestData): Promise<string> {
         {
           role: 'system',
           content:
-            'You are a garage business assistant in Kenya. Write a short, friendly WhatsApp weekly digest for a garage owner. Use simple language. Include the key numbers, one actionable insight, and encouragement. Keep it under 10 lines. Use emojis sparingly. No greetings like "Dear" — start with the garage name.',
+            'You are a garage business assistant in Kenya. Write a short, friendly WhatsApp weekly digest for a garage owner. Use simple language. Keep it under 12 lines. Use emojis sparingly. No greetings like "Dear" — start with the garage name.\n\nInclude:\n1. Key numbers (cars, hours, completion rate)\n2. Bay utilisation % and how it compares to the industry benchmark of 75-85% for a well-run garage\n3. If utilisation is below 60%, suggest ways to fill bays. If above 85%, suggest hiring or extending hours.\n4. One actionable insight based on the data\n\nIndustry benchmarks for context:\n- Well-run independent garage: 75-85% bay utilisation\n- Average cars per bay per day: 1.5-2.5\n- Completion rate target: 90%+\n- Cancellation rate warning: above 15%',
         },
         {
           role: 'user',
@@ -172,6 +218,8 @@ function buildFallbackDigest(data: TenantDigestData): string {
     `${data.tenantName} — Weekly Report`,
     '',
     `Cars this week: ${data.total}`,
+    `Estimated bay hours: ${data.estimatedHours}h`,
+    `Bay utilisation: ${data.bayUtilisation}% (target: 75-85%)`,
     `Completed: ${data.completed} | Cancelled: ${data.cancelled}`,
     `WhatsApp: ${data.byChannel.whatsapp} | App: ${data.byChannel.app}`,
   ]
