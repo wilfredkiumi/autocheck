@@ -1,5 +1,6 @@
 import type { VM } from '@/lib/state'
 import { ChevronRight, ShieldCheck } from '@/components/icons'
+import { HeroArt } from '@/components/HeroArt'
 
 export function ConsumerHome({ vm }: { vm: VM }) {
   return (
@@ -21,10 +22,16 @@ export function ConsumerHome({ vm }: { vm: VM }) {
         </div>
       </div>
 
-      <div style={{ padding: '0 20px', marginBottom: 18 }}>
+      <div style={{ padding: '0 20px', marginBottom: 14 }}>
         <div style={{ font: "800 27px 'Archivo'", letterSpacing: '-.02em', lineHeight: 1.1 }}>Book your car in.</div>
         <div style={{ font: "400 14px 'Manrope'", color: '#5A645E', marginTop: 6, lineHeight: 1.45 }}>
           Reserve your spot with a garage you — or someone you trust — already know.
+        </div>
+      </div>
+
+      <div style={{ padding: '0 20px 16px' }}>
+        <div style={{ borderRadius: 18, background: 'linear-gradient(135deg, var(--acs) 0%, #FBFDFC 78%)', border: '1px solid #E6EEEA', overflow: 'hidden', padding: '6px 8px 0' }}>
+          <HeroArt />
         </div>
       </div>
 
