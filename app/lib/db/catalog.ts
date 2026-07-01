@@ -11,7 +11,7 @@ import {
   type TenantKey,
   type Theme,
 } from '@/lib/data'
-import type { Garage as DbGarage, Issue, Service, Tenant } from '@/lib/supabase/types'
+import type { Garage as DbGarage, Issue, Review, Service, Tenant } from '@/lib/supabase/types'
 
 // Loads the driver-facing catalog (tenants, garages, issues, services) the
 // booking screens render. When Supabase isn't configured — or a query fails, or
@@ -23,17 +23,27 @@ export async function loadAppData(): Promise<AppData> {
 
   try {
     const supabase = createAnonClient()
-    const [tenantsRes, garagesRes, issuesRes, servicesRes] = await Promise.all([
+    const [tenantsRes, garagesRes, issuesRes, servicesRes, reviewsRes] = await Promise.all([
       supabase.from('tenants').select('*'),
       supabase.from('garages').select('*').order('sort', { ascending: true }),
       supabase.from('issues').select('*').order('sort', { ascending: true }),
       supabase.from('services').select('*').order('sort', { ascending: true }),
+      supabase.from('reviews').select('*').order('created_at', { ascending: false }),
     ])
 
     const tenants = (tenantsRes.data ?? []) as Tenant[]
     const garages = (garagesRes.data ?? []) as DbGarage[]
     const issues = (issuesRes.data ?? []) as Issue[]
     const services = (servicesRes.data ?? []) as Service[]
+    const reviews = (reviewsRes.data ?? []) as Review[]
+
+    // Group reviews by garage
+    const reviewsByGarage = new Map<string, Review[]>()
+    for (const r of reviews) {
+      const arr = reviewsByGarage.get(r.garage_id) ?? []
+      arr.push(r)
+      reviewsByGarage.set(r.garage_id, arr)
+    }
 
     if (!tenants.length || !garages.length) return STATIC_APP_DATA
 
@@ -50,8 +60,8 @@ export async function loadAppData(): Promise<AppData> {
       }
     }
 
-    const GARAGES = garages.filter((g) => g.mode === 'circle').map((g) => mapGarage(g, idToKey))
-    const NYERI = garages.filter((g) => g.mode === 'verified').map((g) => mapGarage(g, idToKey))
+    const GARAGES = garages.filter((g) => g.mode === 'circle').map((g) => mapGarage(g, idToKey, reviewsByGarage))
+    const NYERI = garages.filter((g) => g.mode === 'verified').map((g) => mapGarage(g, idToKey, reviewsByGarage))
     const ISSUES = dedupe(issues.map((i) => i.label))
     const SERVICES = dedupeBy(
       services.map((s) => ({ key: s.key, label: s.label, def: s.est_mins })),
@@ -87,8 +97,9 @@ function mapTheme(t: Tenant): Theme {
   }
 }
 
-function mapGarage(g: DbGarage, idToKey: Record<string, TenantKey>): DemoGarage {
+function mapGarage(g: DbGarage, idToKey: Record<string, TenantKey>, reviewsByGarage: Map<string, Review[]>): DemoGarage {
   const d = g.details ?? {}
+  const garageReviews = reviewsByGarage.get(g.id) ?? []
   return {
     id: g.id,
     tenantKey: idToKey[g.tenant_id],
@@ -106,6 +117,12 @@ function mapGarage(g: DbGarage, idToKey: Record<string, TenantKey>): DemoGarage 
     quoteBy: g.quote_by ?? '',
     mode: g.mode,
     rating: g.rating != null ? String(g.rating) : undefined,
+    reviewCount: garageReviews.length,
+    reviews: garageReviews.slice(0, 5).map((r) => ({
+      rating: r.rating,
+      comment: r.comment,
+      created_at: r.created_at,
+    })),
     visits: d.visits,
     open: d.open,
     avail: d.avail,

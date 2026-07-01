@@ -136,6 +136,16 @@ export type BookingIssue = {
   label: string
 }
 
+export type Review = {
+  id: string
+  booking_id: string
+  garage_id: string
+  driver_id: string | null
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
 // Minimal shape consumed by @supabase/supabase-js generics. Only the tables the
 // app reads/writes through the typed client are spelled out here; extend as the
 // data layer grows.
@@ -166,6 +176,7 @@ export interface Database {
       bookings: Table<Booking>
       booking_issues: Table<BookingIssue>
       vehicles: Table<Vehicle>
+      reviews: Table<Review>
       wa_conversations: Table<{
         phone: string
         state: Record<string, unknown>

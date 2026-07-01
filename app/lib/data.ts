@@ -22,6 +22,12 @@ export interface Avatar {
   c: string
 }
 
+export interface GarageReview {
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
 export interface Garage {
   id?: string // DB uuid when sourced from Supabase; undefined for static demo data
   tenantKey?: TenantKey // which tenant this garage belongs to (for WhatsApp routing)
@@ -39,6 +45,8 @@ export interface Garage {
   quoteBy: string
   mode: 'circle' | 'verified'
   rating?: string
+  reviewCount?: number
+  reviews?: GarageReview[]
   visits?: string
   open?: string
   avail?: string

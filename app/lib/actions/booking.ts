@@ -19,7 +19,7 @@ export type CreateBookingInput = {
 }
 
 export type CreateBookingResult =
-  | { ok: true; ref: string; isGuest: boolean }
+  | { ok: true; ref: string; bookingId: string; isGuest: boolean }
   | { ok: false; error: string }
 
 export async function createBookingAction(
@@ -117,5 +117,5 @@ export async function createBookingAction(
       .insert(input.issues.map((label) => ({ booking_id: booking.id, label })))
   }
 
-  return { ok: true, ref: 'AG-' + booking.id.slice(0, 4).toUpperCase(), isGuest: !user }
+  return { ok: true, ref: 'AG-' + booking.id.slice(0, 4).toUpperCase(), bookingId: booking.id, isGuest: !user }
 }

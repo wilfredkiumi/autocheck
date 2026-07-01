@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { createBookingAction } from '@/lib/actions/booking'
 import { diagnoseAction } from '@/lib/actions/diagnose'
+import { submitReviewAction } from '@/lib/actions/review'
 import { resolveWaTarget } from './wa-link'
 import {
   BOOKINGS,
@@ -53,6 +54,11 @@ interface State {
   bookingRef: string | null
   isGuestBooking: boolean
   bookingError: string | null
+  bookingId: string | null
+  reviewRating: number
+  reviewComment: string
+  reviewSubmitted: boolean
+  reviewSubmitting: boolean
   plate: string
   carModel: string
   driverName: string
@@ -100,6 +106,11 @@ const INITIAL: State = {
   bookingRef: null,
   isGuestBooking: false,
   bookingError: null,
+  bookingId: null,
+  reviewRating: 0,
+  reviewComment: '',
+  reviewSubmitted: false,
+  reviewSubmitting: false,
   plate: '',
   carModel: '',
   driverName: '',
@@ -321,7 +332,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       carModel: st.carModel,
       driverName: st.driverName,
     })
-    if (res.ok) patch({ submitting: false, bookingRef: res.ref, isGuestBooking: res.isGuest, s: 4 })
+    if (res.ok) patch({ submitting: false, bookingRef: res.ref, bookingId: res.bookingId, isGuestBooking: res.isGuest, s: 4 })
     else patch({ submitting: false, bookingError: res.error })
   }
 
@@ -870,6 +881,26 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     isGuestBooking: st.isGuestBooking,
     signUpHref: `/login?name=${encodeURIComponent(st.driverName)}&plate=${encodeURIComponent(st.plate)}${st.carModel ? `&model=${encodeURIComponent(st.carModel)}` : ''}`,
     bookingError: st.bookingError,
+    bookingId: st.bookingId,
+    reviewRating: st.reviewRating,
+    reviewComment: st.reviewComment,
+    reviewSubmitted: st.reviewSubmitted,
+    reviewSubmitting: st.reviewSubmitting,
+    setReviewRating: (r: number) => patch({ reviewRating: r }),
+    onReviewComment: (e: React.ChangeEvent<HTMLTextAreaElement>) => patch({ reviewComment: e.target.value }),
+    submitReview: async () => {
+      const garage = st.away || GARAGES[st.g]
+      if (!st.bookingId || !garage?.id || st.reviewRating < 1 || st.reviewSubmitting) return
+      patch({ reviewSubmitting: true })
+      const res = await submitReviewAction({
+        bookingId: st.bookingId,
+        garageId: garage.id,
+        rating: st.reviewRating,
+        comment: st.reviewComment || undefined,
+      })
+      if (res.ok) patch({ reviewSubmitted: true, reviewSubmitting: false })
+      else patch({ reviewSubmitting: false, bookingError: res.error })
+    },
     track: trackRows(T.accent),
     doneBack: wl ? 'Done' : 'Back to your garages',
 
@@ -938,8 +969,13 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         photos: [],
         voice: null,
         bookingRef: null,
+        bookingId: null,
         isGuestBooking: false,
         bookingError: null,
+        reviewRating: 0,
+        reviewComment: '',
+        reviewSubmitted: false,
+        reviewSubmitting: false,
         plate: '',
         carModel: '',
         driverName: '',

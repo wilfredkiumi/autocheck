@@ -56,11 +56,34 @@ export function Detail({ vm }: { vm: VM }) {
             <div style={{ font: "500 13px 'Manrope'", color: '#33403A', lineHeight: 1.4 }}>{g.circleText}</div>
           </div>
         )}
-        <div style={{ background: '#F4F7F5', borderRadius: 12, padding: 13 }}>
-          <div style={{ color: '#E8A33A', fontSize: 13, marginBottom: 6 }}>★★★★★</div>
-          <div style={{ font: "400 13px 'Manrope'", color: '#33403A', lineHeight: 1.55 }}>"{g.quote}"</div>
-          <div style={{ font: "600 11px 'Manrope'", color: '#7B857F', marginTop: 8 }}>— {g.quoteBy}</div>
-        </div>
+        {g.reviews && g.reviews.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {g.reviews.map((r, i) => (
+              <div key={i} style={{ background: '#F4F7F5', borderRadius: 12, padding: 13 }}>
+                <div style={{ color: '#E8A33A', fontSize: 13, marginBottom: 6 }}>
+                  {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                </div>
+                {r.comment && (
+                  <div style={{ font: "400 13px 'Manrope'", color: '#33403A', lineHeight: 1.55 }}>"{r.comment}"</div>
+                )}
+                <div style={{ font: "600 11px 'Manrope'", color: '#7B857F', marginTop: 8 }}>
+                  — {new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ background: '#F4F7F5', borderRadius: 12, padding: 13 }}>
+            <div style={{ color: '#E8A33A', fontSize: 13, marginBottom: 6 }}>{'★'.repeat(Math.round(Number(g.rating) || 5))}{'☆'.repeat(5 - Math.round(Number(g.rating) || 5))}</div>
+            <div style={{ font: "400 13px 'Manrope'", color: '#33403A', lineHeight: 1.55 }}>"{g.quote}"</div>
+            <div style={{ font: "600 11px 'Manrope'", color: '#7B857F', marginTop: 8 }}>— {g.quoteBy}</div>
+          </div>
+        )}
+        {g.reviewCount != null && g.reviewCount > 0 && (
+          <div style={{ font: "600 12px 'Manrope'", color: '#7B857F', marginTop: 8, textAlign: 'center' }}>
+            {g.rating} · {g.reviewCount} review{g.reviewCount !== 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       <div style={{ margin: '14px 20px 0', background: '#fff', border: '1px solid #E2E8E5', borderRadius: 16, padding: 16 }}>
@@ -388,6 +411,46 @@ export function Done({ vm }: { vm: VM }) {
           ))}
         </div>
       </div>
+      {vm.bookingId && !vm.reviewSubmitted && (
+        <div style={{ background: '#fff', border: '1px solid #E2E8E5', borderRadius: 14, padding: 16, marginTop: 13 }}>
+          <div style={{ font: "700 14px 'Manrope'", color: '#0F1A14', marginBottom: 4 }}>How was your experience?</div>
+          <div style={{ font: "400 12px 'Manrope'", color: '#7B857F', marginBottom: 12 }}>Rate {vm.g.name} so other drivers know what to expect.</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                onClick={() => vm.setReviewRating(star)}
+                style={{ fontSize: 28, cursor: 'pointer', color: star <= vm.reviewRating ? '#E8A33A' : '#DCE5E0' }}
+              >
+                ★
+              </span>
+            ))}
+          </div>
+          {vm.reviewRating > 0 && (
+            <>
+              <textarea
+                value={vm.reviewComment}
+                onChange={vm.onReviewComment}
+                placeholder="Tell others about your experience (optional)"
+                style={{ width: '100%', height: 64, resize: 'none', background: '#F4F7F5', border: '1px solid #E2E8E5', borderRadius: 11, padding: 11, color: '#0F1A14', font: "400 13px 'Manrope'", outline: 'none', boxSizing: 'border-box' }}
+              />
+              <div
+                onClick={vm.submitReview}
+                style={{ marginTop: 10, background: 'var(--ac)', color: '#fff', borderRadius: 11, padding: 12, textAlign: 'center', font: "700 13px 'Manrope'", cursor: vm.reviewSubmitting ? 'default' : 'pointer', opacity: vm.reviewSubmitting ? 0.7 : 1 }}
+              >
+                {vm.reviewSubmitting ? 'Submitting...' : 'Submit review'}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {vm.reviewSubmitted && (
+        <div style={{ background: 'var(--acs)', border: '1px solid var(--ac)', borderRadius: 14, padding: 16, marginTop: 13, textAlign: 'center' }}>
+          <div style={{ font: "700 14px 'Manrope'", color: 'var(--acd)' }}>Thank you for your review!</div>
+          <div style={{ font: "400 12px 'Manrope'", color: 'var(--acd)', marginTop: 4 }}>Your feedback helps other drivers find trusted garages.</div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 9, marginTop: 13 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#fff', border: '1px solid #E2E8E5', borderRadius: 13, padding: 14, cursor: 'pointer' }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
