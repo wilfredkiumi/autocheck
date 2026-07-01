@@ -16,6 +16,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Supabase's Site URL is sometimes configured as the bare origin, so a magic
+  // link can drop its ?code on '/' instead of /auth/callback — where it never
+  // gets exchanged. Forward it to the callback (same-origin, so the PKCE
+  // code_verifier cookie travels with the request) so sign-in still completes.
+  if (request.nextUrl.pathname === '/' && request.nextUrl.searchParams.has('code')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    return NextResponse.redirect(url)
+  }
+
   const { response, user, role } = await updateSession(request)
   const { pathname } = request.nextUrl
 
