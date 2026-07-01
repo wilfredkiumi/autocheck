@@ -4,7 +4,7 @@ import { TENANT_SLUGS } from '@/lib/data'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { loadAppData, loadDriverContext } from '@/lib/db/catalog'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 // Per-tenant entry point. When Supabase is configured, render on-demand
 // (tenants are dynamic). Without it, pre-render the static demo slugs.
