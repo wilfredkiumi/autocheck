@@ -1,9 +1,18 @@
+import { redirect } from 'next/navigation'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { createClient } from '@/lib/supabase/server'
 import { RegisterForm } from './register-form'
 
 export const metadata = { title: 'Register your garage · AutoCheck' }
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  // If Supabase is configured, check auth — redirect to login if not signed in.
+  if (isSupabaseConfigured) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/login?next=/register')
+  }
+
   return (
     <main
       style={{

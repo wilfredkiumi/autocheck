@@ -38,31 +38,9 @@ export function RegisterForm() {
       <Field label="Your name" value={ownerName} onChange={setOwnerName} placeholder="e.g. Juma Ochieng" />
       <Field label="Phone number (optional)" value={phone} onChange={setPhone} placeholder="+254700000000" type="tel" />
 
-      <div
-        style={{
-          fontSize: 13,
-          color: '#0A6A44',
-          background: '#EAF3EE',
-          border: '1px solid #CDE5D8',
-          borderRadius: 12,
-          padding: '12px 14px',
-          lineHeight: 1.5,
-        }}
-      >
-        Not signed in yet?{' '}
-        <a href="/login?next=/register" style={{ color: '#0E7C50', fontWeight: 700, textDecoration: 'underline' }}>
-          Sign in first
-        </a>{' '}
-        — you&apos;ll come straight back here.
-      </div>
-
       <button style={primaryBtn} disabled={pending} onClick={submit}>
         {pending ? 'Registering...' : 'Register garage'}
       </button>
-
-      <a href="/login" style={{ fontSize: 13, color: '#7B857F', textAlign: 'center', textDecoration: 'none' }}>
-        Already have an account? Sign in
-      </a>
 
       {err && (
         <div

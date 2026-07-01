@@ -4,7 +4,6 @@ import { useState, useTransition } from 'react'
 import {
   requestEmailOtp,
   requestPhoneOtp,
-  signInWithGoogle,
   verifyPhoneOtp,
 } from '@/lib/auth/actions'
 
@@ -55,13 +54,6 @@ export function LoginForm({ next }: { next?: string }) {
       else setErr(res.error)
     })
 
-  const google = () =>
-    start(async () => {
-      setErr(null)
-      const res = await signInWithGoogle(next)
-      if (!res.ok) setErr(res.error)
-    })
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', gap: 6, background: '#F2F5F3', borderRadius: 12, padding: 4 }}>
@@ -69,7 +61,7 @@ export function LoginForm({ next }: { next?: string }) {
           Phone
         </Tab>
         <Tab active={mode === 'email'} onClick={() => setMode('email')}>
-          Email / Google
+          Email
         </Tab>
       </div>
 
@@ -128,9 +120,6 @@ export function LoginForm({ next }: { next?: string }) {
           />
           <button style={primaryBtn} disabled={pending} onClick={sendEmail}>
             {pending ? 'Sending…' : 'Email me a magic link'}
-          </button>
-          <button style={secondaryBtn} disabled={pending} onClick={google}>
-            Continue with Google
           </button>
         </>
       )}
