@@ -32,7 +32,12 @@ export async function GET(request: NextRequest) {
           .eq('id', user.id)
           .returns<{ role: UserRole }[]>()
           .single()
-        dest = homeForRole(profile?.role ?? 'driver')
+        const role = profile?.role ?? 'driver'
+        // This callback only fires for email / Google — our garage-owner &
+        // admin channels. A user still on the default 'driver' role signed in
+        // here to become an owner, so send them to garage registration rather
+        // than the driver home. Existing owners/admins go to their dashboard.
+        dest = role === 'driver' ? '/register' : homeForRole(role)
       }
       return NextResponse.redirect(`${origin}${dest}`)
     }

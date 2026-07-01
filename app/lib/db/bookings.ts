@@ -26,6 +26,35 @@ export async function listBookings(): Promise<BookingRow[]> {
   })
 }
 
+export interface DriverBookingRow extends BookingRow {
+  garageName: string | null
+}
+
+// The signed-in driver's own bookings, newest first, with the garage name joined
+// for display. RLS (`bookings_driver_read`) already scopes rows to
+// driver_id = auth.uid(), so no explicit filter is needed here.
+export async function listMyBookings(): Promise<DriverBookingRow[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, booking_issues(label), garages(name)')
+    .order('created_at', { ascending: false })
+    .returns<
+      (Booking & { booking_issues: { label: string }[]; garages: { name: string } | null })[]
+    >()
+
+  if (error) throw error
+
+  return (data ?? []).map((b) => {
+    const { booking_issues, garages, ...booking } = b
+    return {
+      ...booking,
+      issues: booking_issues?.map((i) => i.label) ?? [],
+      garageName: garages?.name ?? null,
+    }
+  })
+}
+
 export async function confirmBooking(id: string): Promise<void> {
   const supabase = await createClient()
   const { error } = await supabase

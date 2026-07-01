@@ -95,6 +95,8 @@ for deploys.
   approved AUTHENTICATION template.
 - **`skipped: true` in logs** — `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID`
   aren't set in that environment.
-- **Driver signs in but sees no bookings** — separate issue: there is no
-  driver-facing "my bookings" list yet (see the note in the phase docs);
-  `claim_bookings_by_phone` links the rows but no UI surfaces them.
+- **Driver signs in but sees no bookings** — after phone sign-in drivers land on
+  `/profile`, which lists their own bookings (RLS `bookings_driver_read`).
+  `claim_bookings_by_phone` links prior guest/WhatsApp bookings made with the
+  same phone; if they still don't appear, confirm the booking's `customer_phone`
+  matches the signed-in number.

@@ -2,12 +2,15 @@ import type { UserRole } from '@/lib/supabase/types'
 
 // Where each role lands after sign-in, and which path prefixes that role may use.
 //
-//   driver        → the consumer booking app (root + per-tenant entry pages)
+//   driver        → their account page (bookings + a link back into the funnel)
 //   owner / staff → the garage dashboard
 //   admin         → the platform admin (verify garages, manage tenants)
+//
+// Note: the booking funnel lives at '/' and stays open to everyone; a signed-in
+// driver's *home* is /profile, which links back to '/' to book again.
 
 export const HOME_FOR_ROLE: Record<UserRole, string> = {
-  driver: '/',
+  driver: '/profile',
   owner: '/dashboard',
   staff: '/dashboard',
   admin: '/admin',
