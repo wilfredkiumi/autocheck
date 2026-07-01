@@ -4,17 +4,18 @@ import { useState, useTransition } from 'react'
 import {
   requestEmailOtp,
   requestPhoneOtp,
+  verifyEmailOtp,
   verifyPhoneOtp,
 } from '@/lib/auth/actions'
 
 type Mode = 'phone' | 'email'
-type PhoneStep = 'enter' | 'verify'
+type Step = 'enter' | 'verify'
 
 const ACCENT = '#0E7C50'
 
 export function LoginForm({ next }: { next?: string }) {
   const [mode, setMode] = useState<Mode>('phone')
-  const [step, setStep] = useState<PhoneStep>('enter')
+  const [step, setStep] = useState<Step>('enter')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [email, setEmail] = useState('')
@@ -50,17 +51,38 @@ export function LoginForm({ next }: { next?: string }) {
       setErr(null)
       setMsg(null)
       const res = await requestEmailOtp(email.trim(), next)
-      if (res.ok) setMsg(`Magic link sent to ${email.trim()}. Check your inbox.`)
-      else setErr(res.error)
+      if (res.ok) {
+        setStep('verify')
+        setMsg(`We sent a 6-digit code to ${email.trim()}.`)
+      } else {
+        setErr(res.error)
+      }
     })
+
+  const verifyEmail = () =>
+    start(async () => {
+      setErr(null)
+      const res = await verifyEmailOtp(email.trim(), code.trim(), next)
+      // On success the action redirects; we only land here on failure.
+      if (!res.ok) setErr(res.error)
+    })
+
+  // Switching tabs resets the flow so phone/email state can't bleed together.
+  const switchMode = (m: Mode) => {
+    setMode(m)
+    setStep('enter')
+    setCode('')
+    setMsg(null)
+    setErr(null)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', gap: 6, background: '#F2F5F3', borderRadius: 12, padding: 4 }}>
-        <Tab active={mode === 'phone'} onClick={() => setMode('phone')}>
+        <Tab active={mode === 'phone'} onClick={() => switchMode('phone')}>
           Phone
         </Tab>
-        <Tab active={mode === 'email'} onClick={() => setMode('email')}>
+        <Tab active={mode === 'email'} onClick={() => switchMode('email')}>
           Email
         </Tab>
       </div>
@@ -109,7 +131,7 @@ export function LoginForm({ next }: { next?: string }) {
         </>
       )}
 
-      {mode === 'email' && (
+      {mode === 'email' && step === 'enter' && (
         <>
           <Field
             label="Email"
@@ -119,7 +141,33 @@ export function LoginForm({ next }: { next?: string }) {
             type="email"
           />
           <button style={primaryBtn} disabled={pending} onClick={sendEmail}>
-            {pending ? 'Sending…' : 'Email me a magic link'}
+            {pending ? 'Sending…' : 'Email me a code'}
+          </button>
+        </>
+      )}
+
+      {mode === 'email' && step === 'verify' && (
+        <>
+          <Field
+            label="Enter the code from your email"
+            value={code}
+            onChange={setCode}
+            placeholder="123456"
+            type="text"
+          />
+          <button style={primaryBtn} disabled={pending} onClick={verifyEmail}>
+            {pending ? 'Verifying…' : 'Verify & sign in'}
+          </button>
+          <button
+            style={linkBtn}
+            disabled={pending}
+            onClick={() => {
+              setStep('enter')
+              setCode('')
+              setMsg(null)
+            }}
+          >
+            ← Change email
           </button>
         </>
       )}

@@ -46,7 +46,10 @@ export async function verifyPhoneOtp(
   return { ok: true }
 }
 
-// Email magic-link / password is offered to garage owners and platform admins.
+// Email sign-in for garage owners and platform admins. Sends a 6-digit code
+// (same UX as phone). We still pass emailRedirectTo so a clicked magic link
+// keeps working as a fallback, but the primary path is code entry below —
+// which, unlike the PKCE link, needs no cookie and survives in-app browsers.
 export async function requestEmailOtp(email: string, next?: string): Promise<ActionResult> {
   const callbackPath = next ? `/auth/callback?next=${encodeURIComponent(next)}` : '/auth/callback'
   const supabase = await createClient()
@@ -55,6 +58,22 @@ export async function requestEmailOtp(email: string, next?: string): Promise<Act
     options: { emailRedirectTo: redirectUrl(callbackPath) },
   })
   if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+// Verify the emailed 6-digit code and route by role. Mirrors verifyPhoneOtp.
+// `type: 'email'` is a direct OTP check — no PKCE, no redirect — so it works in
+// any browser, including the Mail/WhatsApp in-app webviews that break magic links.
+export async function verifyEmailOtp(
+  email: string,
+  token: string,
+  next?: string,
+): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  if (error) return { ok: false, error: error.message }
+  if (next) redirect(next)
+  await redirectToRoleHome()
   return { ok: true }
 }
 
