@@ -70,7 +70,12 @@ export async function verifyEmailOtp(
   next?: string,
 ): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  // Existing users get an 'email' OTP; a brand-new user's first code is a
+  // 'signup' OTP. Try 'email' first, fall back to 'signup' so both work.
+  let { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  if (error) {
+    ;({ error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' }))
+  }
   if (error) return { ok: false, error: error.message }
   if (next) redirect(next)
   await redirectToRoleHome()
