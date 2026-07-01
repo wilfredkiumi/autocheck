@@ -76,6 +76,7 @@ export const TENANT_SLUGS: Record<string, TenantKey> = {
   'juma-auto': 'juma',
   juma: 'juma',
   westgate: 'westgate',
+  'mombasa-road': 'westgate',
 }
 
 export const THEMES: Record<TenantKey, Theme> = {

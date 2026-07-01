@@ -158,21 +158,58 @@ interface WaMessage {
   deposit?: string
 }
 
+// Fields persisted to localStorage so a page refresh doesn't lose progress.
+const PERSIST_KEYS: (keyof State)[] = [
+  's', 'g', 'bookingId', 'bookingRef', 'bookingLiveStatus', 'isGuestBooking',
+  'plate', 'carModel', 'driverName', 'issues', 'slot', 'note', 'fulfil',
+  'reviewSubmitted',
+]
+
+function storageKey(tenant: TenantKey) {
+  return `autocheck:booking:${tenant}`
+}
+
+function loadPersistedState(tenant: TenantKey): Partial<State> | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(storageKey(tenant))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    // Only restore if there's a meaningful booking in progress or completed
+    if (!parsed.bookingId && parsed.s <= 0) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function persistState(tenant: TenantKey, st: State) {
+  if (typeof window === 'undefined') return
+  try {
+    const obj: Record<string, unknown> = {}
+    for (const k of PERSIST_KEYS) obj[k] = st[k]
+    localStorage.setItem(storageKey(tenant), JSON.stringify(obj))
+  } catch { /* quota exceeded etc */ }
+}
+
+function clearPersistedState(tenant: TenantKey) {
+  if (typeof window === 'undefined') return
+  try { localStorage.removeItem(storageKey(tenant)) } catch { /* ignore */ }
+}
+
 export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP_DATA) {
   // Dynamic, tenant-scoped content — static demo arrays by default, or the
   // Supabase-loaded bundle when the caller injects one. The rest of the hook is
   // unchanged; it just reads these names instead of module-level constants.
   const { THEMES, GARAGES, NYERI, ISSUES, SERVICES } = data
 
-  const [st, setSt] = useState<State>(() =>
-    initialTenant
-      ? {
-          ...INITIAL,
-          tenant: initialTenant,
-          g: 0,
-        }
-      : INITIAL,
-  )
+  const [st, setSt] = useState<State>(() => {
+    const base = initialTenant
+      ? { ...INITIAL, tenant: initialTenant, g: 0 }
+      : INITIAL
+    const saved = loadPersistedState(base.tenant)
+    return saved ? { ...base, ...saved } : base
+  })
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
   const chatRef = useRef<HTMLDivElement | null>(null)
 
@@ -181,6 +218,12 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     (fn: (s: State) => Partial<State>) => setSt((s) => ({ ...s, ...fn(s) })),
     [],
   )
+
+  // Persist relevant state to localStorage on changes
+  useEffect(() => {
+    persistState(st.tenant, st)
+  }, [st.tenant, st.s, st.bookingId, st.bookingLiveStatus, st.plate, st.driverName,
+      st.issues, st.slot, st.reviewSubmitted])
 
   useEffect(() => {
     return () => {
@@ -976,7 +1019,8 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     toIssue: () => patch({ s: 2 }),
     toSlot: () => patch({ s: 3 }),
     confirm: () => canConfirm && patch({ s: 4 }),
-    reset: () =>
+    reset: () => {
+      clearPersistedState(st.tenant)
       patch({
         s: 0,
         away: null,
@@ -989,7 +1033,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         voice: null,
         bookingRef: null,
         bookingId: null,
-  bookingLiveStatus: null,
+        bookingLiveStatus: null,
         isGuestBooking: false,
         bookingError: null,
         reviewRating: 0,
@@ -1000,7 +1044,8 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         carModel: '',
         driverName: '',
         sheetOpen: false,
-      }),
+      })
+    },
   }
 }
 
