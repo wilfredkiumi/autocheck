@@ -579,11 +579,11 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
   }
   const garages = GARAGES.map((g, i) => ({
     ...decorate(g),
-    onClick: () => openSheet({ away: null, g: i, sheetNext: 1 }),
+    onClick: () => patch({ g: i, away: null, s: 1 }),
   }))
   const nyeri = NYERI.map((g) => ({
     ...decorate(g),
-    onClick: () => openSheet({ away: g, sheetNext: 1 }),
+    onClick: () => patch({ away: g, s: 1 }),
   }))
 
   // The garage the sheet is acting on, and its WhatsApp target (plate baked in).
@@ -857,6 +857,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       patch({ driverName: e.target.value }),
     canBook: st.plate.trim().length >= 4 && st.driverName.trim().length >= 2,
     openBrandSheet: () => openSheet({ sheetNext: 2 }),
+    openDetailSheet: () => openSheet({ sheetNext: 2 }),
     closeSheet: () => patch({ sheetOpen: false }),
     continueInApp: () => patch({ sheetOpen: false, s: st.sheetNext }),
     sheetWaHref: sheetWa.href,

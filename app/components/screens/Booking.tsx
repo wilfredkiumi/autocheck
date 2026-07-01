@@ -88,7 +88,7 @@ export function Detail({ vm }: { vm: VM }) {
       </div>
 
       <div style={bottomCta}>
-        <div onClick={vm.toIssue} style={{ background: 'var(--ac)', color: '#fff', borderRadius: 14, padding: 16, textAlign: 'center', font: "700 15px 'Manrope'", cursor: 'pointer', boxShadow: '0 8px 18px rgba(0,0,0,.14)' }}>
+        <div onClick={vm.openDetailSheet} style={{ background: 'var(--ac)', color: '#fff', borderRadius: 14, padding: 16, textAlign: 'center', font: "700 15px 'Manrope'", cursor: 'pointer', boxShadow: '0 8px 18px rgba(0,0,0,.14)' }}>
           Book your car in →
         </div>
       </div>
