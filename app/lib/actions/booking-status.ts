@@ -1,13 +1,13 @@
 'use server'
 
-import { createAnonClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export type BookingStatus = 'new' | 'confirmed' | 'in_bay' | 'ready' | 'collected' | 'cancelled'
 
 export async function getBookingStatusAction(
   bookingId: string,
 ): Promise<{ status: BookingStatus; updatedAt: string } | null> {
-  const supabase = createAnonClient()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('bookings')
     .select('status, updated_at')
