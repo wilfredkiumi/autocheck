@@ -103,8 +103,13 @@ async function redirectToRoleHome(): Promise<never> {
 }
 
 function redirectUrl(path: string): string {
+  // Use a trimmed, non-empty value only. `??` won't catch NEXT_PUBLIC_SITE_URL=""
+  // (empty string is neither null nor undefined), which silently drops the origin
+  // and makes Supabase fall back to its dashboard Site URL — often a protected
+  // *.vercel.app deployment URL that bounces users to the Vercel login page.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  const vercelUrl = process.env.VERCEL_URL?.trim()
   const base =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  return `${base}${path}`
+    siteUrl || (vercelUrl ? `https://${vercelUrl}` : 'http://localhost:3000')
+  return `${base.replace(/\/$/, '')}${path}`
 }

@@ -74,6 +74,63 @@ export async function sendButtons(to: string, body: string, buttons: ReplyButton
   return res.json()
 }
 
+/**
+ * Deliver a one-time login passcode via a WhatsApp *authentication* template.
+ *
+ * A login code is sent outside any active conversation window, so WhatsApp
+ * rejects free-form text here — it must be a pre-approved template in the
+ * AUTHENTICATION category. Create it once in Meta Business Manager, then point
+ * these env vars at it:
+ *   WHATSAPP_OTP_TEMPLATE — template name  (default 'otp_login')
+ *   WHATSAPP_OTP_LANG     — language code  (default 'en')
+ *
+ * Authentication templates must carry an OTP button (copy-code or one-tap), so
+ * Meta expects the code in BOTH the body and the button component.
+ *
+ * Throws on a Graph API error so the auth hook fails loudly (a swallowed error
+ * would leave the driver waiting for a code that never comes). No-ops with a
+ * log when credentials are absent, matching the other senders here.
+ */
+export async function sendWhatsAppOtp(to: string, code: string) {
+  const token = process.env.WHATSAPP_TOKEN
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
+  if (!to || !token || !phoneId) {
+    console.info('[whatsapp] otp skipped (no credentials):', { to })
+    return { skipped: true as const }
+  }
+  const name = process.env.WHATSAPP_OTP_TEMPLATE || 'otp_login'
+  const lang = process.env.WHATSAPP_OTP_LANG || 'en'
+  const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name,
+        language: { code: lang },
+        components: [
+          { type: 'body', parameters: [{ type: 'text', text: code }] },
+          {
+            type: 'button',
+            sub_type: 'url',
+            index: '0',
+            parameters: [{ type: 'text', text: code }],
+          },
+        ],
+      },
+    }),
+  })
+  const json = await res.json()
+  if (!res.ok) {
+    throw new Error(
+      `WhatsApp OTP send failed (${res.status}): ${JSON.stringify(json?.error ?? json)}`,
+    )
+  }
+  return json
+}
+
 /** Send a plain text message. No-ops with a log if credentials are absent. */
 export async function sendText(to: string, body: string) {
   const token = process.env.WHATSAPP_TOKEN
