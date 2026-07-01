@@ -166,7 +166,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       ? {
           ...INITIAL,
           tenant: initialTenant,
-          g: initialTenant === 'juma' ? 0 : initialTenant === 'westgate' ? 2 : INITIAL.g,
+          g: 0,
         }
       : INITIAL,
   )
