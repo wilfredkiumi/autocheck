@@ -394,7 +394,7 @@ export function Done({ vm }: { vm: VM }) {
       <div style={{ background: '#fff', border: '1px solid #E2E8E5', borderRadius: 14, padding: 16, marginTop: 13 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <span style={{ font: "700 11px 'Space Mono'", color: '#7B857F', letterSpacing: '.06em' }}>LIVE STATUS</span>
-          <span style={{ font: "500 11px 'Space Mono'", color: 'var(--ac)' }}>#AG-4821</span>
+          <span style={{ font: "500 11px 'Space Mono'", color: 'var(--ac)' }}>{vm.bookingRef || '#AG-4821'}</span>
         </div>
         <div style={{ marginTop: 14 }}>
           {vm.track.map((t, i) => (

@@ -3,6 +3,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { createBookingAction } from '@/lib/actions/booking'
 import { diagnoseAction } from '@/lib/actions/diagnose'
 import { submitReviewAction } from '@/lib/actions/review'
+import { getBookingStatusAction, type BookingStatus } from '@/lib/actions/booking-status'
 import { resolveWaTarget } from './wa-link'
 import {
   BOOKINGS,
@@ -55,6 +56,7 @@ interface State {
   isGuestBooking: boolean
   bookingError: string | null
   bookingId: string | null
+  bookingLiveStatus: BookingStatus | null
   reviewRating: number
   reviewComment: string
   reviewSubmitted: boolean
@@ -107,6 +109,7 @@ const INITIAL: State = {
   isGuestBooking: false,
   bookingError: null,
   bookingId: null,
+  bookingLiveStatus: null,
   reviewRating: 0,
   reviewComment: '',
   reviewSubmitted: false,
@@ -184,6 +187,25 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
       if (timer.current) clearInterval(timer.current)
     }
   }, [])
+
+  // Poll booking status from DB every 10s after a booking is created.
+  // Stops polling once the booking reaches a terminal status.
+  useEffect(() => {
+    if (!st.bookingId || !isSupabaseConfigured) return
+    const terminal: BookingStatus[] = ['collected', 'cancelled']
+    if (st.bookingLiveStatus && terminal.includes(st.bookingLiveStatus)) return
+    let cancelled = false
+    const poll = async () => {
+      const res = await getBookingStatusAction(st.bookingId!)
+      if (cancelled || !res) return
+      if (res.status !== st.bookingLiveStatus) {
+        patch({ bookingLiveStatus: res.status })
+      }
+    }
+    poll()
+    const id = setInterval(poll, 10_000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [st.bookingId, st.bookingLiveStatus]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // keep WhatsApp chat scrolled to the bottom as messages arrive
   useEffect(() => {
@@ -339,36 +361,32 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
   // --- builders ----------------------------------------------------------
   const trackRows = (acc: string): TrackRow[] => {
     const done = (l: string, t: string): TrackRow => ({
-      label: l,
-      time: t,
-      dot: acc,
-      ring: acc,
-      line: acc,
-      fg: '#0F1A14',
+      label: l, time: t, dot: acc, ring: acc, line: acc, fg: '#0F1A14',
     })
     const now = (l: string, t: string): TrackRow => ({
-      label: l,
-      time: t,
-      dot: acc,
-      ring: acc,
-      line: '#DCE5E0',
-      fg: '#0F1A14',
+      label: l, time: t, dot: acc, ring: acc, line: '#DCE5E0', fg: '#0F1A14',
     })
     const soon = (l: string, t: string): TrackRow => ({
-      label: l,
-      time: t,
-      dot: 'transparent',
-      ring: '#CBD5CF',
-      line: '#DCE5E0',
-      fg: '#9AA6A0',
+      label: l, time: t, dot: 'transparent', ring: '#CBD5CF', line: '#DCE5E0', fg: '#9AA6A0',
     })
-    return [
-      done('Request sent', 'just now'),
-      done('Garage confirmed', 'just now'),
-      now('Bay reserved for you', 'held till 20 min after your slot'),
-      soon('Car received', 'at your slot'),
-      soon('Ready for pickup', '—'),
+
+    const status = st.bookingLiveStatus || 'new'
+    const stages: BookingStatus[] = ['new', 'confirmed', 'in_bay', 'ready', 'collected']
+    const idx = stages.indexOf(status)
+
+    const labels: [string, string][] = [
+      ['Request sent', 'just now'],
+      ['Garage confirmed', 'just now'],
+      ['Car in bay', 'work in progress'],
+      ['Ready for pickup', 'we\'ll notify you'],
+      ['Picked up', 'complete'],
     ]
+
+    return labels.map(([label, time], i) => {
+      if (i < idx) return done(label, time)
+      if (i === idx) return now(label, i === 0 ? 'just now' : time)
+      return soon(label, i === idx + 1 ? 'up next' : '—')
+    })
   }
 
   const roadTrack = (): TrackRow[] => {
@@ -885,7 +903,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     reviewRating: st.reviewRating,
     reviewComment: st.reviewComment,
     reviewSubmitted: st.reviewSubmitted,
-    canReview: false,
+    canReview: st.bookingLiveStatus === 'collected',
     reviewSubmitting: st.reviewSubmitting,
     setReviewRating: (r: number) => patch({ reviewRating: r }),
     onReviewComment: (e: React.ChangeEvent<HTMLTextAreaElement>) => patch({ reviewComment: e.target.value }),
@@ -971,6 +989,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
         voice: null,
         bookingRef: null,
         bookingId: null,
+  bookingLiveStatus: null,
         isGuestBooking: false,
         bookingError: null,
         reviewRating: 0,
