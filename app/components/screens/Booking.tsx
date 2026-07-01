@@ -411,7 +411,7 @@ export function Done({ vm }: { vm: VM }) {
           ))}
         </div>
       </div>
-      {vm.bookingId && !vm.reviewSubmitted && (
+      {vm.bookingId && vm.canReview && !vm.reviewSubmitted && (
         <div style={{ background: '#fff', border: '1px solid #E2E8E5', borderRadius: 14, padding: 16, marginTop: 13 }}>
           <div style={{ font: "700 14px 'Manrope'", color: '#0F1A14', marginBottom: 4 }}>How was your experience?</div>
           <div style={{ font: "400 12px 'Manrope'", color: '#7B857F', marginBottom: 12 }}>Rate {vm.g.name} so other drivers know what to expect.</div>

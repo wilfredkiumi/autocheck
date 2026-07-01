@@ -885,6 +885,7 @@ export function useBooking(initialTenant?: TenantKey, data: AppData = STATIC_APP
     reviewRating: st.reviewRating,
     reviewComment: st.reviewComment,
     reviewSubmitted: st.reviewSubmitted,
+    canReview: false,
     reviewSubmitting: st.reviewSubmitting,
     setReviewRating: (r: number) => patch({ reviewRating: r }),
     onReviewComment: (e: React.ChangeEvent<HTMLTextAreaElement>) => patch({ reviewComment: e.target.value }),
