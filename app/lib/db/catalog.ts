@@ -110,7 +110,7 @@ function mapGarage(g: DbGarage, idToKey: Record<string, TenantKey>, reviewsByGar
     next: d.next ?? '',
     trustType: d.trustType,
     trust: d.trust,
-    avatars: d.avatars,
+    avatars: d.avatars ?? [],
     circleAvatars: d.circleAvatars ?? [],
     circleText: d.circleText ?? '',
     quote: g.quote ?? '',
